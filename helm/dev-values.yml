@@ -1,0 +1,13 @@
+global:
+  projectName: <<Name of the Project..e.g. ohm, imports>> 
+  env: dev
+
+# If HPA not enabled it will use this static replica count...Useually we should use HPA for higher env only
+replicaCount: {} ## Default is 1
+
+#+++++++++++++++++++++++++++++++++Developer Use++++++++++++++++++++++++++++++++++++++++++++++++++++#
+configMap:
+  data:
+    #TokenConfig
+    FORGEROCK_ISS: vault:#projectpath#/data/readable/dev/forgerock#iss
+    FORGEROCK_KEYSTORE: vault:#projectpath#/data/readable/dev/forgerock#keyStore

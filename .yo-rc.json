@@ -1,0 +1,6 @@
+{
+  "generator-ohm-microservices": {
+    "packageName": "kafkaproducer",
+    "packageFolder": "kafkaproducer"
+  }
+}

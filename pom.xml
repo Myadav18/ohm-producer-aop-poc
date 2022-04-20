@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>net.apmoller.ohm.microservices</groupId>
+    <artifactId>parent-pom</artifactId>
+    <version>5.0.0</version>
+  </parent>
+  <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+  <artifactId>parent</artifactId>
+  <version>1.0.0</version>
+  <name>kafkaproducer</name>
+  <packaging>pom</packaging>
+  <description>kafkaproducer microservice project</description>
+	<modules>
+        <module>service</module>
+        <module>spec</module>
+        <module>loadtest</module>
+      </modules>
+  <repositories>
+    <repository>
+      <id>maerskdev-nexus</id>
+      <url>https://tools-nexus.maerskdev.net/repository/maven-group-public/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+</project>

@@ -1,0 +1,177 @@
+openapi: 3.0.1
+info:
+  title: ohm-kafkaproducer
+  description: APIs
+  contact:
+    name: Team Vikings
+    email: Team.Vikings@maersk.com
+  license:
+    name: Maersk
+    url: 'https://terms.maersk.com'
+  version: 1.0.0
+  x-release-notes: |
+    # Version     Date     Notes
+    # 1.0.0                Initial draft
+  x-proxy-name: ohm-kafkaproducer
+  x-platform: Order Handling
+  x-availability-status: General Availability
+  x-oas-href: https://github.com/Maersk-Global/blob/master/spec/src/main/resources/swagger.yml
+  x-docs-href: https://confluence.maerskdev.net/display/Architecture
+  x-business-owner-email: Rohit.Gupte@maersk.com
+  x-product-owner-email: nilesh.virendra.popat@maersk.com
+  x-technical-owner-email: swaminathan.vetri@maersk.com
+  x-published-for: customer
+  x-layer: Experience
+  x-supply-chain-area: |
+    Import Terminal
+    Import Trucking
+    Import Last Mile
+  x-category: Operational
+  x-backend-systems: CXED
+  x-avg-data-currency-mins: 60 mins
+  x-api-platform: Google Apigee
+  x-visibility: public
+  x-support-l1: Apigee Edge-L1
+  x-support-l2: Apigee Edge-L2
+  x-support-l3: Team Vikings
+  x-brand: Maersk
+security:
+  - ApiKeyHeader: []
+  - Oauth2User: [BasicCustomer, MaerskInternal]
+tags:
+  - name: ohm-kafkaproducer
+    description: REST APIs for getting the details
+paths:
+   /user:
+    post:
+      tags:
+        - ohm-kafkaproducer
+      summary: Endpoint to publish the Kafka message
+      description: Enter the description
+      parameters:
+        - name: name
+          in: query
+          description: Name of the User
+          type: string
+          required: true
+        - name: dept
+          in: query
+          description: Department of the user
+          type: string
+          required: true
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        401:
+          description: The user is not authorized in the system
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        403:
+          description: The user is Forbidden to call the requested resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        404:
+          description: Requested resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+components:
+  schemas:
+    User:
+      required:
+      - name
+      - dept
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the User
+        dept:
+          type: string
+          description: Department of the User
+    ApiError:
+      required:
+      - message
+      - method
+      - requestUri
+      - status
+      - timestamp
+      type: object
+      properties:
+        method:
+          type: string
+          description: The request method type e.g. GET, POST.
+        requestUri:
+          type: string
+          description: The request URI.
+        status:
+          type: integer
+          description: Response status code.
+        timestamp:
+          type: string
+          description: The date and time (dd-MM-yyyy hh:mm:ss) when the error occured.
+        message:
+          type: string
+          description: High level error message.
+        debugMessage:
+          type: string
+          description: Detailed error message.
+        subErrors:
+          type: array
+          description: The list of invalid fields in the request.
+          items:
+            $ref: '#/components/schemas/ApiValidationError'
+    ApiValidationError:
+        required:
+        - field
+        - message
+        - rejectedValue
+        type: object
+        properties:
+          field:
+            type: string
+            description: The field that has failed validation.
+          rejectedValue:
+            type: string
+            description: The value that has failed validation.
+          message:
+            type: string
+            description: The reason and advice for failed validation.
+  securitySchemes:
+    Oauth2User:
+      # Maersk IAM OAuth 2.0 with user-level access control for public client application only (browser, mobile)
+      type: oauth2
+      description: Maersk Identity and Access Management, with user-level access control
+      flows:
+        authorizationCode:
+          authorizationUrl: https://iam.maersk.com/acm/oauth2/mau/authorize
+          tokenUrl: https://api.maersk.com/oauth2/access_token
+          scopes:
+            BasicCustomer: Basic customer role
+            MaerskInternal: Internal users role
+    ApiKeyHeader:
+      # HTTP Header Consumer-Key
+      type: apiKey
+      in: header
+      name: Consumer-Key

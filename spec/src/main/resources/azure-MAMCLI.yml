@@ -1,0 +1,50 @@
+#azure mam cli pipeline yml configuration
+
+trigger:
+  branches:
+    include:
+      - branch name
+  paths:
+    include:
+      - spec/src/main/resources/apigeeConfig.yaml
+      - spec/src/main/resources/azure-MAMCLI.yml
+      - spec/src/main/resources/swagger.yml
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+resources:
+  containers:
+    - container: mamcli
+      image: mam-cli:azure-latest
+      endpoint: mam-registry-ro  #changeit
+
+variables:
+  - group: mam-var-group  #changeit
+
+stages:
+  - stage: Deploy
+    condition: ne(variables['Build.Reason'], 'PullRequest')
+    displayName: Deploy mamcli for CICD
+    jobs:
+      - job: mamcli
+        displayName: Push API Proxy
+        container: mamcli
+        steps:
+          - task: CmdLine@2
+            displayName: mamcli login
+            inputs:
+              script: |   #changeit
+                mamcli login --client-id '$(Azure.Client)' --client-secret '$(Azure.Key)'
+
+
+          - task: CmdLine@2
+            displayName: mamcli push with config file
+            inputs:
+              script: |
+                mamcli push-proxy --config $(System.DefaultWorkingDirectory)/spec/src/main/resources/apigeeConfig.yaml --product-key '$(Azure.ProductKey)'
+          - task: CmdLine@2
+            displayName: mamcli push metadata
+            inputs:
+              script: |
+                mamcli push-metadata --config $(System.DefaultWorkingDirectory)/spec/src/main/resources/apigeeConfig.yaml --oas $(System.DefaultWorkingDirectory)/spec/src/main/resources/swagger.yml --product-key '$(Azure.ProductKey)'

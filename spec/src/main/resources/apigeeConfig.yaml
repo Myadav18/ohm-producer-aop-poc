@@ -1,0 +1,14 @@
+#Apigeeconfig file
+
+apigee-proxy-name: Proxy name as per admiral
+apigee-basepath: basepath as per admiral
+apigee-host: maersk-host
+cdt:
+  target: https://Ingree-url-cdt
+pp:
+  target: https://Ingree-url-pp
+prod:
+  target: https://Ingree-url-prod
+
+verify-jwt: forgerock
+

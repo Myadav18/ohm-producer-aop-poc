@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+    <artifactId>parent</artifactId>
+    <version>1.0.0</version>
+  </parent>
+  <artifactId>kafkaproducer-service</artifactId>
+  <version>1.0.0</version>
+  <name>Online kafkaproducer Service - Service</name>
+  <description>kafkaproducer service as a microservice for online</description>
+  <properties>
+    <artifactName>kafkaproducer-service</artifactName>
+    <com.spotify.version>1.4.9</com.spotify.version>
+    <sonar.coverage.exclusions>
+      **/net/apmoller/crb/ohm/microservices/kafkaproducer/repositories/*,
+      **/net/apmoller/crb/ohm/microservices/kafkaproducer/KafkaproducerApplication.java,
+      **/net/apmoller/crb/ohm/microservices/kafkaproducer/models/*,
+      **/net/apmoller/crb/ohm/microservices/kafkaproducer/domains/*
+    </sonar.coverage.exclusions>
+    </properties>
+    <dependencies>
+            <dependency>
+        <groupId>org.springframework.kafka</groupId>
+        <artifactId>spring-kafka</artifactId>
+        <version>2.7.1</version>
+      </dependency>
+          </dependencies>
+
+  <build>
+    <finalName>${artifactName}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+            <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>0.8.4</version>
+        <configuration>
+          <destFile>${basedir}/target/site/jacoco/jacoco.exec</destFile>
+          <dataFile>${basedir}/target/site/jacoco/jacoco.exec</dataFile>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>prepare-package</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <version>${com.spotify.version}</version>
+        <configuration>
+          <repository>ohm/${project.artifactId}</repository>
+          <tag>${project.version}</tag>
+          <buildArgs>
+            <JAR_FILE>target/${artifactName}</JAR_FILE>
+          </buildArgs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

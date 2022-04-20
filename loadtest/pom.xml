@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+        <artifactId>parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+    <artifactId>kafkaproducer-service-load-test</artifactId>
+    <version>1.0.0</version>
+    <name>Online kafkaproducer Service - Load Test</name>
+    <description>kafkaproducer service load test</description>
+    <properties>
+        <jmeter-maven-plugin-version>2.0.3</jmeter-maven-plugin-version>
+        <jmeterVersion>3.1</jmeterVersion>
+        <loadtest.host>localhost</loadtest.host>
+        <loadtest.port>8080</loadtest.port>
+        <loadtest.version>/api/v1/</loadtest.version>
+        <loadtest.loops>1000</loadtest.loops>
+        <loadtest.users>20</loadtest.users>
+        <loadtest.rampUp>40</loadtest.rampUp>
+        <proxy.host>dk.ibg.apmoller.net</proxy.host>
+        <proxy.port>8887</proxy.port>
+        <proxy.username>aon</proxy.username>
+        <proxy.password>aon</proxy.password>
+        <proxy.nonproxyhosts>localhost,127.0.0.0/8,::1,apmoller.net</proxy.nonproxyhosts>
+    </properties>
+    <profiles>
+        <profile>
+            <id>load-tests</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.lazerycode.jmeter</groupId>
+                        <artifactId>jmeter-maven-plugin</artifactId>
+                        <version>${jmeter-maven-plugin-version}</version>
+                        <executions>
+                            <execution>
+                                <id>jmeter-tests</id>
+                                <goals>
+                                    <goal>jmeter</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <jmeterVersion>${jmeterVersion}</jmeterVersion>
+                            <jMeterProcessJVMSettings>
+                                <arguments>
+                                    <argument>-Dhost=${loadtest.host}</argument>
+                                    <argument>-Dport=${loadtest.port}</argument>
+                                    <argument>-Dversion=${loadtest.version}</argument>
+                                    <argument>-Dcities.loops=${loadtest.loops}</argument>
+                                    <argument>-Dcities.users=${loadtest.users}</argument>
+                                    <argument>-Dcities.rampUp=${loadtest.rampUp}</argument>
+                                </arguments>
+                            </jMeterProcessJVMSettings>
+                            <proxyConfig>
+                                <host>${proxy.host}</host>
+                                <port>${proxy.port}</port>
+                                <username>${proxy.username}</username>
+                                <password>${proxy.password}</password>
+                                <hostExclusions>${proxy.nonproxyhosts}</hostExclusions>
+                            </proxyConfig>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

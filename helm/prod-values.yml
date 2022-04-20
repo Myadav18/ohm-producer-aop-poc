@@ -1,0 +1,17 @@
+global:
+  projectName: <<Name of the Project..e.g. ohm, imports>> 
+  env: prod
+
+# If you want to enable HPA [Only applicable in QA/PP/Prod]
+k8sObjectsEnabled:
+  hpa: true # By Default is Disabled[Enter Value in Boolean]
+
+# If HPA not enabled it will use static replica count.
+replicaCount: {} # you can increase as per application traffic, Default is 1
+  
+#+++++++++++++++++++++++++++++++++Developer Use++++++++++++++++++++++++++++++++++#
+configMap:
+  data:
+    #TokenConfig
+    FORGEROCK_ISS: vault:#projectpath#/data/readable/prod/forgerock#iss
+    FORGEROCK_KEYSTORE: vault:#projectpath#/data/readable/prod/forgerock#keyStore

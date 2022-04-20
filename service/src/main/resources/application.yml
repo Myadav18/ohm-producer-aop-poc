@@ -1,0 +1,59 @@
+#Configuration file where we used to keep DB and external service call and Jwt related info
+FORGEROCK_ISS: https://iam-cdt.maersk.com/acm/oauth2/mau
+FORGEROCK_KEYSTORE: https://api-cdt.maersk.com/oauth2/jwks?provider=ciam
+kafkabootstrapservers: localhost:9092
+server:
+  port: 8080
+
+spring:
+  #  profiles:     #too pas by pass jwt plz use this profile only for local testing and for integration testing
+  #    active: integrationTest
+  main:
+    banner-mode: CONSOLE
+  banner:
+    location: banner.txt
+  jackson:
+    # Controls the inclusion of properties during serialization.
+    default-property-inclusion: non_null
+  application:
+    # Application name
+    name: Kafkaproducer
+    reactive-jwt-validators:
+      enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${FORGEROCK_ISS}
+          audience: bca001
+          jwk-set-uri: ${FORGEROCK_KEYSTORE}
+          jws-algorithm: RS256
+          secret-key: vtshV6vQk2cWgFyC
+
+
+kafka:
+  bootstrap-servers: ${kafkabootstrapservers}
+  clientId: kafkaproducer-service
+  command:
+    submission:
+      topic: kafkaproducer-Command
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+      group:
+        liveness:
+          include: diskSpace,ping
+          show-details: always
+
+metrics:
+  distribution:
+    percentiles[http.server.requests]: 0.90,0.95,0.99
+info:
+  git:
+    mode: full
