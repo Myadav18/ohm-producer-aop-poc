@@ -29,37 +29,38 @@ public class SubmissionServiceImpl implements SubmissionService {
     private String serviceName;
 
     public SubmissionServiceImpl(KafkaMessageGenerator kafkaMessageGenerator,
-                                 KafkaTemplate<String, String> kafkaTemplate,
-                                 @Value("${kafka.command.submission.topic}") String kafkaproducerCommandTopic) {
+            KafkaTemplate<String, String> kafkaTemplate,
+            @Value("${kafka.command.submission.topic}") String kafkaproducerCommandTopic) {
         this.kafkaMessageGenerator = kafkaMessageGenerator;
         this.kafkaTemplate = kafkaTemplate;
         this.kafkaproducerCommandTopic = kafkaproducerCommandTopic;
     }
 
     @Override
-    public User submit(String name,String dept){
+    public User submit(String name, String dept) {
 
-      UUID commandCorrelationId = UUID.randomUUID();
-      log.debug("Going to send submission message for command correlation Id {}", commandCorrelationId);
+        UUID commandCorrelationId = UUID.randomUUID();
+        log.debug("Going to send submission message for command correlation Id {}", commandCorrelationId);
 
-      User user = new User(name,dept);
+        User user = new User(name, dept);
 
-      String kafkaMessage = kafkaMessageGenerator.getMessage(user);
+        String kafkaMessage = kafkaMessageGenerator.getMessage(user);
 
-      try {
-        RecordMetadata recordMetadata = kafkaTemplate.send(new ProducerRecord<>(kafkaproducerCommandTopic, commandCorrelationId.toString(), kafkaMessage)).get().getRecordMetadata();
-        log.debug("Command correlation Id: {} - Published to Kafka topic {} on partition {} at offset {}. Submission message: {}"
-          , commandCorrelationId, kafkaproducerCommandTopic, recordMetadata.partition(), recordMetadata.offset(), kafkaMessage);
-      } catch (InterruptedException e) {
-        log.error("InterruptedException occurred! {}", e);
-        throw new InternalServerException(e.getMessage());
-      } catch (ExecutionException e) {
-        log.error("ExecutionException occurred! {}", e);
-        throw new InternalServerException(e.getMessage());
-      }
-      return User.builder()
-        .name(name)
-        .dept(dept)
-        .build();
+        try {
+            RecordMetadata recordMetadata = kafkaTemplate.send(
+                    new ProducerRecord<>(kafkaproducerCommandTopic, commandCorrelationId.toString(), kafkaMessage))
+                    .get().getRecordMetadata();
+            log.info(
+                    "Command correlation Id: {} - Published to Kafka topic {} on partition {} at offset {}. Submission message: {}",
+                    commandCorrelationId, kafkaproducerCommandTopic, recordMetadata.partition(),
+                    recordMetadata.offset(), kafkaMessage);
+        } catch (InterruptedException e) {
+            log.error("InterruptedException occurred! {}", e);
+            throw new InternalServerException(e.getMessage());
+        } catch (ExecutionException e) {
+            log.error("ExecutionException occurred! {}", e);
+            throw new InternalServerException(e.getMessage());
+        }
+        return User.builder().name(name).dept(dept).build();
     }
 }

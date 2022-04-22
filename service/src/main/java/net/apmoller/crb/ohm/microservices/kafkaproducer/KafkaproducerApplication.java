@@ -12,7 +12,8 @@ public class KafkaproducerApplication {
     /**
      * Standalone spring boot starter.
      *
-     * @param args arguments for the spring boot app run.
+     * @param args
+     *            arguments for the spring boot app run.
      */
     public static void main(String... args) {
         SpringApplication.run(KafkaproducerApplication.class, args);

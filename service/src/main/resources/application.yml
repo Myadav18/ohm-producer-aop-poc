@@ -3,7 +3,7 @@ FORGEROCK_ISS: https://iam-cdt.maersk.com/acm/oauth2/mau
 FORGEROCK_KEYSTORE: https://api-cdt.maersk.com/oauth2/jwks?provider=ciam
 kafkabootstrapservers: localhost:9092
 server:
-  port: 8080
+  port: 8081
 
 spring:
   #  profiles:     #too pas by pass jwt plz use this profile only for local testing and for integration testing
@@ -12,6 +12,8 @@ spring:
     banner-mode: CONSOLE
   banner:
     location: banner.txt
+  jmx:
+    enabled: true
   jackson:
     # Controls the inclusion of properties during serialization.
     default-property-inclusion: non_null
@@ -46,6 +48,8 @@ management:
   endpoint:
     health:
       show-details: always
+    metrics:
+      enabled: true
       group:
         liveness:
           include: diskSpace,ping

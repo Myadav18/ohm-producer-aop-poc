@@ -20,7 +20,7 @@ class KafkaMessageGeneratorTest {
     public void test_getMessage() {
         User user = ResponseStubs.createUser();
         String res = kafkaMessageGenerator.getMessage(user);
-        String message = "{\"name\":\""+user.getName()+"\",\"dept\":\""+user.getDept()+"\"}";
+        String message = "{\"name\":\"" + user.getName() + "\",\"dept\":\"" + user.getDept() + "\"}";
         Assertions.assertEquals(res, message);
     }
 }

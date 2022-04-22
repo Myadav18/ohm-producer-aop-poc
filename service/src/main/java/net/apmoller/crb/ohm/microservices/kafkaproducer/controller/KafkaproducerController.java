@@ -7,20 +7,18 @@ import net.apmoller.crb.ohm.microservices.kafkaproducer.services.SubmissionServi
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-
 @RestController
 @RequiredArgsConstructor
 @Slf4j
 class KafkaproducerController {
 
-private final SubmissionService submissionService;
+    private final SubmissionService submissionService;
 
-@PostMapping(path = "/user")
-public Mono<User> getUser(@RequestParam(name = "name") String user_name,
-                          @RequestParam(value = "dept") String user_dept){
+    @PostMapping(path = "/user")
+    public User getUser(@RequestParam(name = "name") String user_name, @RequestParam(value = "dept") String user_dept) {
 
-    log.info("request received for KafkaproducerController");
+        log.info("request received for KafkaproducerController");
 
- return Mono.just(submissionService.submit(user_name,user_dept));
-  }
+        return submissionService.submit(user_name, user_dept);
+    }
 }

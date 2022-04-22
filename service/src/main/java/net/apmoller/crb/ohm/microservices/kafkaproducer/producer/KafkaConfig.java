@@ -1,4 +1,7 @@
 package net.apmoller.crb.ohm.microservices.kafkaproducer.producer;
+
+import io.micrometer.core.instrument.ImmutableTag;
+import io.micrometer.core.instrument.Metrics;
 import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -7,22 +10,20 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.core.DefaultKafkaProducerFactory;
-import org.springframework.kafka.core.KafkaAdmin;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.core.*;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListenerConfigurer;
 import org.springframework.kafka.config.KafkaListenerEndpointRegistrar;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This class contains all the configuration information for Kafka producer factory to be
- * able to create a Kafka template for publishing messages
+ * This class contains all the configuration information for Kafka producer factory to be able to create a Kafka
+ * template for publishing messages
  */
 @Configuration
 @Getter
@@ -30,7 +31,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KafkaConfig implements KafkaListenerConfigurer {
 
-  private final LocalValidatorFactoryBean validator;
+    private final LocalValidatorFactoryBean validator;
 
     @Value("${kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -61,11 +62,13 @@ public class KafkaConfig implements KafkaListenerConfigurer {
     @Value("${kafka.security-protocol:SASL_SSL}")
     private String securityProtocol;
 
-    private static void addSaslProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol, String loginModule, String username, String password) {
+    private static void addSaslProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol,
+            String loginModule, String username, String password) {
         if (!StringUtils.isEmpty(username)) {
             properties.put("security.protocol", securityProtocol);
             properties.put("sasl.mechanism", saslMechanism);
-            String saslJassConfig = String.format("%s required username=\"%s\" password=\"%s\" ;", loginModule, username, password);
+            String saslJassConfig = String.format("%s required username=\"%s\" password=\"%s\" ;", loginModule,
+                    username, password);
             properties.put("sasl.jaas.config", saslJassConfig);
         }
     }
@@ -78,8 +81,8 @@ public class KafkaConfig implements KafkaListenerConfigurer {
     }
 
     @Bean
-            public ProducerFactory<String, User> producerFactory() {
-            Map<String, Object> properties = new HashMap<>();
+    public ProducerFactory<String, User> producerFactory() {
+        Map<String, Object> properties = new HashMap<>();
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -93,7 +96,11 @@ public class KafkaConfig implements KafkaListenerConfigurer {
         addSaslProperties(properties, saslMechanism, securityProtocol, loginModule, username, password);
         addTruststoreProperties(properties, truststoreLocation, truststorePassword);
 
-        return new DefaultKafkaProducerFactory<>(properties);
+        DefaultKafkaProducerFactory<String, User> producerFactory = new DefaultKafkaProducerFactory<>(properties);
+        producerFactory.addListener(new MicrometerProducerListener<String, User>(Metrics.globalRegistry,
+                Collections.singletonList(new ImmutableTag("customTag", "customTagValue"))));
+
+        return producerFactory;
     }
 
     @Bean
@@ -114,10 +121,9 @@ public class KafkaConfig implements KafkaListenerConfigurer {
         return new KafkaAdmin(properties);
     }
 
-
-  @Override
-  public void configureKafkaListeners(KafkaListenerEndpointRegistrar registrar) {
-    registrar.setValidator(this.validator);
-  }
+    @Override
+    public void configureKafkaListeners(KafkaListenerEndpointRegistrar registrar) {
+        registrar.setValidator(this.validator);
+    }
 
 }
