@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+net.apmoller.crb.ohm.microservices.kafkaproducer.producer.KafkaConfig
+
