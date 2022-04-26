@@ -1,12 +1,12 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.producer;
+package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.exceptions.*;
 import org.springframework.stereotype.Service;
 
 /**

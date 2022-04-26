@@ -1,7 +1,5 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.controller;
+package net.apmoller.crb.ohm.microservices.producer.library.controller;
 
-import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
-import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 //import org.springframework.security.oauth2.jwt.Jwt;
@@ -11,14 +9,12 @@ import org.springframework.security.test.context.support.WithSecurityContextFact
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 
 @Retention(RetentionPolicy.RUNTIME)
-@WithSecurityContext(factory = net.apmoller.crb.ohm.microservices.kafkaproducer.controller.WithMockTokenSecurityContextFactory.class)
+@WithSecurityContext(factory = WithMockTokenSecurityContextFactory.class)
 public @interface WithMockToken {
     String sub() default "uuid";
 
@@ -31,8 +27,7 @@ class WithMockTokenSecurityContextFactory implements WithSecurityContextFactory<
     String token = "Bearer eyJ0eXAiOiJKV1QiLCJraWQiOiJaRHNwdjFHSDlXcEFGQWErdTFZY1dPM2NZeVU9IiwiYWxnIjoiUlMyNTYifQ.eyJhdF9oYXNoIjoia0R4R0x3X2NPUDRHX3JsXzlpQ01PQSIsInN1YiI6IkZpWDZjT01jazhwVEZtQXRyRWRWNHNLSmFoVktmTFBYeDJTVmY2S2JKZmMiLCJjb3VudHJ5IjoiREsiLCJmaXJzdG5hbWUiOiJKeW90aSIsImF1ZGl0VHJhY2tpbmdJZCI6IjBiM2U5OTVkLWZmYjgtNDkzOS05NjA3LTljZDQzOGM0MzZkMS0xMTE5MjkxMCIsInJvbGVzIjpbIk1hZXJza0ludGVybmFsIiwiQ29udHJhY3RSYXRlIiwiRG9jdW1lbnRhdGlvbiIsIkJhc2ljQ3VzdG9tZXIiLCJJbXBvcnRDU0EiLCJXQk9MQXBwcm92ZXIiLCJCb29raW5nIiwiSW52b2ljZXMiLCJBbGxvY2F0aW9uTWFuYWdlciJdLCJpc3MiOiJodHRwczovL2lhbS1zdGFnZS5tYWVyc2suY29tL2FjbS9vYXV0aDIvbWF1IiwidG9rZW5OYW1lIjoiaWRfdG9rZW4iLCJvZmZpY2UiOiJBYXJodXMgLSBESyIsImFjciI6IjAiLCJhenAiOiJiY2EwMDEiLCJhdXRoX3RpbWUiOjE2MTQyNTQ1MDMsInBlcnNvbmlkIjoiMTAwMDA3ODg2MDEiLCJpcGFkZHIiOiIxOTUuODUuMjA0Ljk4IiwiZXhwIjoxNjE0MjYxNzA2LCJjdXN0b21lcl9jb2RlIjoiMTAwMDAwMDc5NTEiLCJpYXQiOjE2MTQyNTQ1MDYsImVtYWlsIjoiSnlvdGkuS3VtYXJpMUBtYWVyc2suY29tIiwibm9uY2UiOiJNalBRMWJIeDgzVmFURW1udndBOCIsImxhc3RuYW1lIjoiS3VtYXJpIiwiYXVkIjoiYmNhMDAxIiwiY19oYXNoIjoiUm1iczdVQy1pM3R2WWZoakp2dEY0QSIsImNhcnJpZXIiOiJNQUVVIiwibmFtZSI6Ikp5b3RpIEt1bWFyaSIsInJlYWxtIjoiL21hdSIsInRva2VuVHlwZSI6IkpXVFRva2VuIiwidXNlcm5hbWUiOiJKeW90aS5LdW1hcmkxQG1hZXJzay5jb20ifQ.jSzc36Fndzkl2rbcy7qNLcZ17GjwSEH-6O23B6wHBMzOm8oRD3ep0jnJGSjmSNMEGQ8w8nEge0vaiz8oM8IkZqQJgCeeN86zYqPQo0NTsNmzxGSvlsiv_6FqEXgWJDnijW4N3ozI8YHOEo8YDYM05ptlVf5X86Ou4Eg0lC8LDHqgN5Q2u4_Yxmo07CDa5juGzjDV3KuD1txKw494WxK2lSSmYVXmDG7QTiAIV221FglPRlRQqwm2uKskFED7kLrdMS5TlqWVx_rV1fsV2zQfEa4N1RGDtnHX9K4gwDik6TNl8H26ZHs2QYqB-SRwT4b_7gpjCUIN9ZEoBKvPA0RwFA";
 
     @Override
-    public SecurityContext createSecurityContext(
-            net.apmoller.crb.ohm.microservices.kafkaproducer.controller.WithMockToken tokenAnnotation) {
+    public SecurityContext createSecurityContext(WithMockToken tokenAnnotation) {
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         HashMap<String, Object> headers = new HashMap<>();
         headers.put("kid", "SOME_ID");

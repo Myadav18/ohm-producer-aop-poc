@@ -1,8 +1,8 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.producer;
+package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
 import io.micrometer.core.instrument.ImmutableTag;
 import io.micrometer.core.instrument.Metrics;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;

@@ -1,8 +1,8 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.controller;
+package net.apmoller.crb.ohm.microservices.producer.library.controller;
 
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.services.SubmissionService;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.utils.ResponseStubs;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.services.SubmissionService;
+import net.apmoller.crb.ohm.microservices.producer.library.utils.ResponseStubs;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,11 +11,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.csrf;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.controller.WithMockToken;
-import org.springframework.http.ResponseEntity;
-
-import java.util.List;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 // @AutoConfigureWebTestClient(timeout = "1000000")

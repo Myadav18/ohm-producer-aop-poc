@@ -1,4 +1,4 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.models;
+package net.apmoller.crb.ohm.microservices.producer.library.models;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

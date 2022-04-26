@@ -1,7 +1,7 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.producer;
+package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.utils.ResponseStubs;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.utils.ResponseStubs;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

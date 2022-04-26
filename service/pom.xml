@@ -4,22 +4,22 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+    <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
     <artifactId>parent</artifactId>
     <version>1.0.0</version>
   </parent>
-  <artifactId>kafkaproducer-service</artifactId>
+  <artifactId>producer-library-service</artifactId>
   <version>1.0.0</version>
-  <name>Online kafkaproducer Service - Service</name>
-  <description>kafkaproducer service as a microservice for online</description>
+  <name>Online producer-library-service Service - Service</name>
+  <description>producer-library-service service as a microservice for online</description>
   <properties>
-    <artifactName>kafkaproducer-service</artifactName>
+    <artifactName>producer-library-service</artifactName>
     <com.spotify.version>1.4.9</com.spotify.version>
     <sonar.coverage.exclusions>
-      **/net/apmoller/crb/ohm/microservices/kafkaproducer/repositories/*,
-      **/net/apmoller/crb/ohm/microservices/kafkaproducer/KafkaproducerApplication.java,
-      **/net/apmoller/crb/ohm/microservices/kafkaproducer/models/*,
-      **/net/apmoller/crb/ohm/microservices/kafkaproducer/domains/*
+      **/net/apmoller/crb/ohm/microservices/producer/library/repositories/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.java,
+      **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/domains/*
     </sonar.coverage.exclusions>
     </properties>
     <dependencies>

@@ -1,8 +1,8 @@
+package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
-package net.apmoller.crb.ohm.microservices.kafkaproducer.producer;
-
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.producer.KafkaConfig;
 import org.springframework.kafka.core.ProducerFactory;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

@@ -1,9 +1,9 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.services;
+package net.apmoller.crb.ohm.microservices.producer.library.services;
 
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.producer.KafkaMessageGenerator;
-import net.apmoller.crb.ohm.microservices.kafkaproducer.exceptions.InternalServerException;
+import net.apmoller.crb.ohm.microservices.producer.library.producer.KafkaMessageGenerator;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.springframework.beans.factory.annotation.Value;

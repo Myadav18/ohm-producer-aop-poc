@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+    <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
     <artifactId>parent</artifactId>
     <version>1.0.0</version>
   </parent>
-  <artifactId>kafkaproducer-service-spec</artifactId>
+  <artifactId>producer-library-service-spec</artifactId>
   <version>1.0.0</version>
-  <name>Online kafkaproducer Service - Specification</name>
-  <description>kafkaproducer service specification for online</description>
+  <name>Online producer-library Service - Specification</name>
+  <description>producer-library service specification for online</description>
 </project>

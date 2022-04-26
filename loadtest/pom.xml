@@ -3,14 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+        <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
         <artifactId>parent</artifactId>
         <version>1.0.0</version>
     </parent>
-    <artifactId>kafkaproducer-service-load-test</artifactId>
+    <artifactId>producer-library-service-load-test</artifactId>
     <version>1.0.0</version>
-    <name>Online kafkaproducer Service - Load Test</name>
-    <description>kafkaproducer service load test</description>
+    <name>Online producer-library Service - Load Test</name>
+    <description>producer-library service load test</description>
     <properties>
         <jmeter-maven-plugin-version>2.0.3</jmeter-maven-plugin-version>
         <jmeterVersion>3.1</jmeterVersion>

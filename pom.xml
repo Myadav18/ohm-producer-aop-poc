@@ -7,12 +7,12 @@
     <artifactId>parent-pom</artifactId>
     <version>5.0.0</version>
   </parent>
-  <groupId>net.apmoller.crb.ohm.microservices.kafkaproducer</groupId>
+  <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
   <artifactId>parent</artifactId>
   <version>1.0.0</version>
-  <name>kafkaproducer</name>
+  <name>producer-library</name>
   <packaging>pom</packaging>
-  <description>kafkaproducer microservice project</description>
+  <description>producer-library microservice project</description>
 	<modules>
         <module>service</module>
         <module>spec</module>

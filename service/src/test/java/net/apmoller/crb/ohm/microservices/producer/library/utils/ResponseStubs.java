@@ -1,6 +1,6 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer.utils;
+package net.apmoller.crb.ohm.microservices.producer.library.utils;
 
-import net.apmoller.crb.ohm.microservices.kafkaproducer.models.User;
+import net.apmoller.crb.ohm.microservices.producer.library.models.User;
 
 public class ResponseStubs {
 

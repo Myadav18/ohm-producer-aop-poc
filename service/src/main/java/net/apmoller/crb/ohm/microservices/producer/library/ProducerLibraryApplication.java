@@ -1,4 +1,4 @@
-package net.apmoller.crb.ohm.microservices.kafkaproducer;
+package net.apmoller.crb.ohm.microservices.producer.library;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * The application class for the kafkaproducer spring boot service.
  */
 @SpringBootApplication
-public class KafkaproducerApplication {
+public class ProducerLibraryApplication {
 
     /**
      * Standalone spring boot starter.
@@ -16,6 +16,6 @@ public class KafkaproducerApplication {
      *            arguments for the spring boot app run.
      */
     public static void main(String... args) {
-        SpringApplication.run(KafkaproducerApplication.class, args);
+        SpringApplication.run(ProducerLibraryApplication.class, args);
     }
 }
