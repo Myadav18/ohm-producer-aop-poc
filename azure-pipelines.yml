@@ -52,66 +52,18 @@ variables:
 pool:
   vmImage: 'ubuntu-latest'
 
-stages:
-  - stage: Build
-    displayName: Build and Push Image
-    jobs:
-      - template: polaris.template.yml@PolarisTemplateRepo
-        parameters:
-          polarisScanBranch: main
-          nexusMaven: true
-          javaVersion: '11'
-
-      - job: Build
-        displayName: Build
-        steps:
-          - template: imports_api_build_template.yml@importsbuildtemplate
-            parameters:
-              SKIP_SONAR: false
-              NEXUS_MAERSK_DEV_NET_CONNECTION: $(NexusConnection)
-              SONAR_QUBE_CONNECTION: ado_sonar_maerskdev_net_token-OH-Modernization
-
-      - job: ComponentTest
-        dependsOn:
-          - Build
-        continueOnError: false
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - template: component-testing-pipeline-template.yml@importsbuildtemplate
-            parameters:
-              COMPONENT_TEST_REPORT_TITLE: ohm-kafkaproducer
-              SKIP_COMPONENT_TEST: false
-              NEXUS_MAERSK_DEV_NET_CONNECTION: $(NexusConnection)
-
-      - job: BlackduckScan
-        dependsOn:
-        - Build
-        condition: or(in(variables['Build.SourceBranch'], 'refs/heads/master', 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'],'refs/heads/release/'), startsWith(variables['Build.SourceBranch'],'refs/heads/hotfix/'))
-        steps:
-        - task: MavenAuthenticate@0
-          displayName: Nexus MaerskDevNet Authentication
-          inputs:
-            mavenServiceConnections: $(NexusConnection)
-
-        - template: blackduck.template.yml@BDTemplateRepo
-
-      - job: DockerHelm
-        dependsOn:
-        - IntegrationTest
-        - BlackduckScan
-        condition: in(dependencies.BlackduckScan.result, 'Succeeded', 'Skipped')
-        steps:
-          - template: docker_build_push_helm_values_template.yml@importsbuildtemplate
-            parameters:
-              IMAGE_NAME: $(ImageName)
-              TAG_NUMBER: $(tag)
-              ACR_SERVICE_CONNECTION: acr-ohm-connection
-
-     - job: PublishPostDeployTestArtifacts
-       dependsOn: IntegrationTest
-       condition: in(dependencies.BlackduckScan.result, 'Succeeded', 'Skipped')
-       pool:
-         vmImage: 'ubuntu-latest'
-       steps:
-         - template: imports_post_deployment_test_template.yml@importsbuildtemplate
+steps:
+  - task: MavenAuthenticate@0
+    displayName: Nexus MaerskDevNet Authentication
+    inputs:
+      mavenServiceConnections: 'NexusMaerskDevNetRW-OH-Modernization'
+  - task: Maven@3
+    inputs:
+      mavenPomFile: 'pom.xml'
+      mavenOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.11'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      goals: 'deploy'
