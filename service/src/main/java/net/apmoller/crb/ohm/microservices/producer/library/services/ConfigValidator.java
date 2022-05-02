@@ -13,7 +13,7 @@ import java.util.Objects;
 @Slf4j
 @Component
 @NoArgsConstructor
-public class Validator {
+public class ConfigValidator {
 
     public void checkValidation(String producerTopic, String bootstrapServer) {
 

@@ -1,6 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
+import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -26,21 +27,18 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     private ApplicationContext context;
 
     @Autowired
-    private Validator validator;
+    private ConfigValidator configValidator;
 
     @Autowired
     private KafkaTemplate<String, T> kafkaTemplate;
-
-    private static final String NOTIFICATION_TOPIC = "${kafka.notification.topic}";
-    private static final String BOOTSTRAP_SERVER = "${kafka.bootstrapserver}";
 
     @Override
     public void sendMessage(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
         try {
-            var producerTopic = context.getEnvironment().resolvePlaceholders(NOTIFICATION_TOPIC);
-            var bootstrapServer = context.getEnvironment().resolvePlaceholders(BOOTSTRAP_SERVER);
-            validator.checkValidation(producerTopic, bootstrapServer);
+            var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
+            var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
+            configValidator.checkValidation(producerTopic, bootstrapServer);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);

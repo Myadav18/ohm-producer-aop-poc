@@ -11,12 +11,12 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 
 @Slf4j
-@SpringBootTest(classes = { Validator.class })
+@SpringBootTest(classes = { ConfigValidator.class })
 @ActiveProfiles({ "test" })
 public class ValidatorTest {
 
     @Autowired
-    private Validator Validator;
+    private ConfigValidator Validator;
 
     @MockBean
     private ApplicationContext context;

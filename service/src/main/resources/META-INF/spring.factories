@@ -1,4 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 net.apmoller.crb.ohm.microservices.producer.library.services.ProducerServiceImpl,\
-net.apmoller.crb.ohm.microservices.producer.library.services.Validator
+net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator
 

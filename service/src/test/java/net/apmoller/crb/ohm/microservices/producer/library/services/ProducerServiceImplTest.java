@@ -37,7 +37,7 @@ public class ProducerServiceImplTest {
     private ApplicationContext context;
 
     @MockBean
-    private Validator validate;
+    private ConfigValidator validate;
 
     @MockBean
     private KafkaTemplate kafkaTemplate;
