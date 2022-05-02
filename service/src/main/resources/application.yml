@@ -1,7 +1,7 @@
 #Configuration file where we used to keep DB and external service call and Jwt related info
 FORGEROCK_ISS: https://iam-cdt.maersk.com/acm/oauth2/mau
 FORGEROCK_KEYSTORE: https://api-cdt.maersk.com/oauth2/jwks?provider=ciam
-kafkabootstrapservers: localhost:9092
+#kafkabootstrapservers: localhost:9092
 server:
   port: 8081
 
@@ -33,12 +33,12 @@ spring:
           secret-key: vtshV6vQk2cWgFyC
 
 
-kafka:
-  bootstrap-servers: ${kafkabootstrapservers}
-  clientId: kafkaproducer-service
-  command:
-    submission:
-      topic: kafkaproducer-Command
+#kafka:
+#  bootstrap-servers: ${kafkabootstrapservers}
+#  clientId: kafkaproducer-service
+#  command:
+#    submission:
+#      topic: kafkaproducer-Command
 
 management:
   endpoints:
