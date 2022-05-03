@@ -8,6 +8,6 @@ import java.util.Map;
 
 public interface ProducerService<T> {
 
-    void sendMessage(T message, Map<String, Object> kafkaHeader)
+    void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException;
 }

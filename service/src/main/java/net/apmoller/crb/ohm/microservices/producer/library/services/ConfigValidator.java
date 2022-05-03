@@ -15,7 +15,7 @@ import java.util.Objects;
 @NoArgsConstructor
 public class ConfigValidator {
 
-    public void checkValidation(String producerTopic, String bootstrapServer) {
+    public void validateInputs(String producerTopic, String bootstrapServer) {
 
         if (producerTopic.startsWith("${")) {
             throw new InvalidTopicException("Topic Placeholder is not valid");
@@ -25,8 +25,7 @@ public class ConfigValidator {
         }
 
         if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
-            throw new KafkaServerNotFoundException(
-                    "Bootstrap Server is not able to Connected, it can't be Empty or null");
+            throw new KafkaServerNotFoundException("Bootstrap details cannot be empty, so unable to be connect");
         }
 
         if (bootstrapServer.startsWith("${")) {

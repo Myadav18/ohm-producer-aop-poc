@@ -67,7 +67,7 @@ public class ProducerServiceImplTest {
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        producerServiceImpl.sendMessage(message, kafkaHeader);
+        producerServiceImpl.produceMessages(message, kafkaHeader);
         Mockito.verify(kafkaTemplate, times(1)).send((ProducerRecord) any());
     }
 
@@ -90,7 +90,7 @@ public class ProducerServiceImplTest {
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
         try {
-            producerServiceImpl.sendMessage(message, kafkaHeader);
+            producerServiceImpl.produceMessages(message, kafkaHeader);
         } catch (InternalServerException e) {
             log.info("Message can't be published to kafka topic topic");
         }
@@ -104,8 +104,8 @@ public class ProducerServiceImplTest {
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
-            doThrow(InvalidTopicException.class).when(validate).checkValidation(any(), any());
-            producerServiceImpl.sendMessage(message, kafkaHeader);
+            doThrow(InvalidTopicException.class).when(validate).validateInputs(any(), any());
+            producerServiceImpl.produceMessages(message, kafkaHeader);
         } catch (InvalidTopicException e) {
             log.info("Message can't be published to kafka topic topic");
         }
@@ -118,8 +118,8 @@ public class ProducerServiceImplTest {
         String producerTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         try {
-            doThrow(KafkaServerNotFoundException.class).when(validate).checkValidation(any(), any());
-            producerServiceImpl.sendMessage(message, kafkaHeader);
+            doThrow(KafkaServerNotFoundException.class).when(validate).validateInputs(any(), any());
+            producerServiceImpl.produceMessages(message, kafkaHeader);
         } catch (KafkaServerNotFoundException e) {
             log.info("Headers can't be null or empty");
         }

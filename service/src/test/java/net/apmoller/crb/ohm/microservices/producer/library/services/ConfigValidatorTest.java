@@ -13,7 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Slf4j
 @SpringBootTest(classes = { ConfigValidator.class })
 @ActiveProfiles({ "test" })
-public class ValidatorTest {
+public class ConfigValidatorTest {
 
     @Autowired
     private ConfigValidator Validator;
@@ -26,7 +26,7 @@ public class ValidatorTest {
         String producerTopic = "";
         String bootstrapServer = "localhost:9092";
         try {
-            Validator.checkValidation(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic, bootstrapServer);
         } catch (InvalidTopicException ex) {
             log.info("Topic name is not valid , it can't be null or Empty");
         }
@@ -37,7 +37,7 @@ public class ValidatorTest {
         String producerTopic = "${";
         String bootstrapServer = "localhost:9092";
         try {
-            Validator.checkValidation(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic, bootstrapServer);
         } catch (InvalidTopicException ex) {
             log.info("Topic Placeholder is not valid");
         }
@@ -48,7 +48,7 @@ public class ValidatorTest {
         String producerTopic = "test";
         String bootstrapServer = "${";
         try {
-            Validator.checkValidation(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic, bootstrapServer);
         } catch (KafkaServerNotFoundException ex) {
             log.info("Placeholder for Bootstrap Server is not Correct");
         }
@@ -59,7 +59,7 @@ public class ValidatorTest {
         String producerTopic = "test";
         String bootstrapServer = "";
         try {
-            Validator.checkValidation(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic, bootstrapServer);
         } catch (KafkaServerNotFoundException ex) {
             log.info("Bootstrap Server is not able to Connected, it can't be Empty or null");
         }
@@ -69,7 +69,7 @@ public class ValidatorTest {
     void testSuccessCase() {
         String producerTopic = "test";
         String bootstrapServer = "localhost:9092";
-        Validator.checkValidation(producerTopic, bootstrapServer);
+        Validator.validateInputs(producerTopic, bootstrapServer);
     }
 
 }

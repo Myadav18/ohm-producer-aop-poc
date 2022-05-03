@@ -33,12 +33,12 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     private KafkaTemplate<String, T> kafkaTemplate;
 
     @Override
-    public void sendMessage(T message, Map<String, Object> kafkaHeader)
+    public void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
         try {
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
-            configValidator.checkValidation(producerTopic, bootstrapServer);
+            configValidator.validateInputs(producerTopic, bootstrapServer);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
