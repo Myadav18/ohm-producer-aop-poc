@@ -1,0 +1,28 @@
+#********************************* WHAT YOU NEED TO KNOW *********************************************#
+# Lines starting with '#' are comments.                                                               #
+# Each line is a file pattern followed by one or more owners.                                         #
+# These owners will be the default owners for everything in the repo.                                 #
+# Order is important. The last matching pattern has the most precedence.                              #
+# So if a pull request only touches javascript files, only these owners will be requested to review.  #
+#*****************************************************************************************************#
+
+## Root Project - All Files
+*                                 @bipin-kumar-maersk @shalini-madhavan-maersk  ##Required default approvers
+
+## DevOps OwnerShips
+/helm/                            @Maersk-Global/ohm-admins
+dockerfile                        @Maersk-Global/ohm-admins
+CODEOWNERS                        @Maersk-Global/ohm-admins
+azure-pipelines.yml               @Maersk-Global/ohm-admins
+
+## Frontend assets
+#*.js                             <<Name of the Team/individual Member>>
+
+## Template and assets
+#*.html *.css *.scss *.img        <<Name of the Team/individual Member>>
+
+## Schema and SQL migrations
+#*.sql *-ddl.pg                   <<Name of the Team/individual Member>>
+
+## QA
+#/tests/end2end/                  <<Name of the Team/individual Member>>
