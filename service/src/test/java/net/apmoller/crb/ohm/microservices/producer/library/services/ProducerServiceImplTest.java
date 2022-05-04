@@ -104,7 +104,7 @@ public class ProducerServiceImplTest {
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
-            doThrow(InvalidTopicException.class).when(validate).validateInputs(any(), any());
+            doThrow(InvalidTopicException.class).when(validate).validateInputs(any());
             producerServiceImpl.produceMessages(message, kafkaHeader);
         } catch (InvalidTopicException e) {
             log.info("Message can't be published to kafka topic topic");
@@ -113,15 +113,15 @@ public class ProducerServiceImplTest {
     }
 
     @Test
-    void testKafkaHeaderIsEmpty() throws KafkaException {
+    void testKafkaServerNotFoundException() throws KafkaException {
         String message = "test Message";
         String producerTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         try {
-            doThrow(KafkaServerNotFoundException.class).when(validate).validateInputs(any(), any());
+            doThrow(KafkaServerNotFoundException.class).when(validate).validateInputs(any());
             producerServiceImpl.produceMessages(message, kafkaHeader);
         } catch (KafkaServerNotFoundException e) {
-            log.info("Headers can't be null or empty");
+            log.info("Unable to Connect the Kafka Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }

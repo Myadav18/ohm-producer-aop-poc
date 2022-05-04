@@ -2,6 +2,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.common.errors.InvalidTopicException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,12 @@ import java.util.Objects;
 @NoArgsConstructor
 public class ConfigValidator {
 
-    public void validateInputs(String producerTopic, String bootstrapServer) {
+    @Autowired
+    private ApplicationContext context;
+
+    public void validateInputs(String producerTopic) {
+
+        var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
 
         if (producerTopic.startsWith("${")) {
             throw new InvalidTopicException("Topic Placeholder is not valid");

@@ -24,9 +24,8 @@ public class ConfigValidatorTest {
     @Test
     void testInvalidTopic() {
         String producerTopic = "";
-        String bootstrapServer = "localhost:9092";
         try {
-            Validator.validateInputs(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic);
         } catch (InvalidTopicException ex) {
             log.info("Topic name is not valid , it can't be null or Empty");
         }
@@ -35,9 +34,8 @@ public class ConfigValidatorTest {
     @Test
     void testInvalidTopicPlaceholder() {
         String producerTopic = "${";
-        String bootstrapServer = "localhost:9092";
         try {
-            Validator.validateInputs(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic);
         } catch (InvalidTopicException ex) {
             log.info("Topic Placeholder is not valid");
         }
@@ -46,9 +44,8 @@ public class ConfigValidatorTest {
     @Test
     void testInvalidServerPlaceholder() {
         String producerTopic = "test";
-        String bootstrapServer = "${";
         try {
-            Validator.validateInputs(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic);
         } catch (KafkaServerNotFoundException ex) {
             log.info("Placeholder for Bootstrap Server is not Correct");
         }
@@ -57,19 +54,11 @@ public class ConfigValidatorTest {
     @Test
     void testInvalidServerConfig() {
         String producerTopic = "test";
-        String bootstrapServer = "";
         try {
-            Validator.validateInputs(producerTopic, bootstrapServer);
+            Validator.validateInputs(producerTopic);
         } catch (KafkaServerNotFoundException ex) {
-            log.info("Bootstrap Server is not able to Connected, it can't be Empty or null");
+            log.info("Bootstrap details cannot be empty, so unable to be connect");
         }
-    }
-
-    @Test
-    void testSuccessCase() {
-        String producerTopic = "test";
-        String bootstrapServer = "localhost:9092";
-        Validator.validateInputs(producerTopic, bootstrapServer);
     }
 
 }
