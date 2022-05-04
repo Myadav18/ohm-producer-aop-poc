@@ -61,3 +61,7 @@ metrics:
 info:
   git:
     mode: full
+
+logging:
+  level:
+    net.apmoller.crb.ohm.microservices.producer.library: debug
