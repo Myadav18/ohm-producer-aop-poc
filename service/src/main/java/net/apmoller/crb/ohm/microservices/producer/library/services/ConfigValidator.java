@@ -19,6 +19,10 @@ public class ConfigValidator {
     @Autowired
     private ApplicationContext context;
 
+    /**
+     * Method checks the validation before posting message to kafka topic.
+     * @param producerTopic
+     */
     public void validateInputs(String producerTopic) {
 
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);

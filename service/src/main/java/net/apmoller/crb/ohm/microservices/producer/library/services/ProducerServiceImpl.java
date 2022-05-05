@@ -32,6 +32,14 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Autowired
     private KafkaTemplate<String, T> kafkaTemplate;
 
+    /**
+     * Method is used to Send Message to kafka topic after validations.
+     * @param message
+     * @param kafkaHeader
+     * @throws InvalidTopicException
+     * @throws InternalServerException
+     * @throws KafkaServerNotFoundException
+     */
     @Override
     public void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
@@ -56,6 +64,11 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         }
     }
 
+    /**
+     * Method adds headers to the producerRecord.
+     * @param headers
+     * @param kafkaHeader
+     */
     private void addHeaders(Headers headers, Map<String, Object> kafkaHeader) {
         if (Objects.nonNull(kafkaHeader)) {
             kafkaHeader.forEach((k, v) -> {
@@ -64,6 +77,11 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         }
     }
 
+    /**
+     * Method sends message to kafka and returns the Success or Failure case.
+     * @param producerRecord
+     * @throws InternalServerException
+     */
     public void publishOnTopic(ProducerRecord<String, T> producerRecord) throws InternalServerException {
         ListenableFuture<SendResult<String, T>> future = kafkaTemplate.send(producerRecord);
         future.addCallback(new ListenableFutureCallback<>() {
