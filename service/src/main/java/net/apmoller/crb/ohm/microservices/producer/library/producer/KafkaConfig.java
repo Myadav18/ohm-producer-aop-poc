@@ -25,7 +25,7 @@ import java.util.Map;
  * This class contains all the configuration information for Kafka producer factory to be able to create a Kafka
  * template for publishing messages
  */
-@Configuration
+// @Configuration
 @Getter
 @Slf4j
 @RequiredArgsConstructor
