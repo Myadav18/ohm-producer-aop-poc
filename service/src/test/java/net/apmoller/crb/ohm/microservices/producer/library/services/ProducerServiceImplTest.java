@@ -3,15 +3,12 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.TimeoutException;
-import org.apache.kafka.common.header.Headers;
 import org.apache.poi.ss.formula.functions.T;
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,16 +18,13 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
-import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.BDDMockito.given;
@@ -59,11 +53,6 @@ public class ProducerServiceImplTest {
     @Autowired
     private ProducerServiceImpl producerServiceImpl;
 
-    @Before
-    public void setUp() {
-
-        producerServiceImpl = new ProducerServiceImpl();
-    }
 
     @Test
     void testMessageSentToTopic() {
@@ -145,7 +134,6 @@ public class ProducerServiceImplTest {
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
-
 
     @Test
     void testProducerServiceForRecover() {
