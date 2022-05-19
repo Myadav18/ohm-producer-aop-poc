@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -45,15 +46,18 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      * @throws KafkaServerNotFoundException
      */
     @Override
-    @Retryable(value = {TransactionTimedOutException.class, TimeoutException.class}, maxAttemptsExpression = "${spring.retry.maximum.attempts}")
-    public void produceMessages(T message, Map<String, Object> kafkaHeader) throws InvalidTopicException,
-            InternalServerException, KafkaServerNotFoundException {
+    @Retryable(value = { TransactionTimedOutException.class,
+            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multuplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+    public void produceMessages(T message, Map<String, Object> kafkaHeader)
+            throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
         try {
+            log.info("Inside produceMessages ");
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
+            log.info("Published to Kafka topic");
         } catch (InternalServerException ex) {
             log.error("unable to push message to kafka ", ex);
             throw ex;
@@ -105,7 +109,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     }
 
     /**
-     * Method Sends the Message to Retry Topic.
+     * Method Sends the Message to Retry Or DLT Topic.
      * 
      * @param e
      * @param message
@@ -119,12 +123,14 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException {
         try {
+            log.info("Inside publishMessageOnRetryOrDltTopic ");
             if ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException)) {
                 var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
                 configValidator.validateInputs(retryTopic);
                 ProducerRecord<String, T> producerRecord = new ProducerRecord<>(retryTopic, message);
                 addHeaders(producerRecord.headers(), kafkaHeader);
                 publishOnTopic(producerRecord);
+                log.info("Publish message to kafka Retry topic");
             }
 
         } catch (InvalidTopicException ex) {
