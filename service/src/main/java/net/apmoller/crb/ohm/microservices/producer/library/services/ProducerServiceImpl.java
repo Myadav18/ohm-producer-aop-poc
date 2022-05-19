@@ -47,9 +47,11 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      */
     @Override
     @Retryable(value = { TransactionTimedOutException.class,
-            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multuplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
+        long startedAt = System.currentTimeMillis();
+        log.info("Started method X at time: " + startedAt);
         try {
             log.info("Inside produceMessages ");
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
@@ -71,6 +73,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             log.error("Exception: ", ex);
             throw ex;
         }
+        long finishedAt = System.currentTimeMillis();
+        log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt) + " milliseconds");
     }
 
     /**
@@ -122,6 +126,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException {
+        long startedAt = System.currentTimeMillis();
+        log.info("Started method X at time: " + startedAt);
         try {
             log.info("Inside publishMessageOnRetryOrDltTopic ");
             if ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException)) {
@@ -143,6 +149,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             log.error("Exception: ", ex);
             throw ex;
         }
+        long finishedAt = System.currentTimeMillis();
+        log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt) + " milliseconds");
     }
 
 }
