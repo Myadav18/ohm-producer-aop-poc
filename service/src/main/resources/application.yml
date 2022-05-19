@@ -32,13 +32,14 @@ spring:
           jws-algorithm: RS256
           secret-key: vtshV6vQk2cWgFyC
 
+  retry:
+    backoff:
+      delay: 100
+      multiplier: 2
+      maxDelay: 600
+    maximum:
+      attempts: 3
 
-#kafka:
-#  bootstrap-servers: ${kafkabootstrapservers}
-#  clientId: kafkaproducer-service
-#  command:
-#    submission:
-#      topic: kafkaproducer-Command
 
 management:
   endpoints:

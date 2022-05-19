@@ -6,12 +6,17 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalSe
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.InvalidTopicException;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
@@ -41,14 +46,20 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      * @throws KafkaServerNotFoundException
      */
     @Override
+    @Retryable(value = { TransactionTimedOutException.class,
+            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
+        long startedAt = System.currentTimeMillis();
+        log.info("Started method X at time: " + startedAt);
         try {
+            log.info("Inside produceMessages ");
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
+            log.info("Published to Kafka topic");
         } catch (InternalServerException ex) {
             log.error("unable to push message to kafka ", ex);
             throw ex;
@@ -62,6 +73,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             log.error("Exception: ", ex);
             throw ex;
         }
+        long finishedAt = System.currentTimeMillis();
+        log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt) + " milliseconds");
     }
 
     /**
@@ -97,6 +110,47 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                 throw new InternalServerException("unable to push message to kafka", ex);
             }
         });
+    }
+
+    /**
+     * Method Sends the Message to Retry Or DLT Topic.
+     * 
+     * @param e
+     * @param message
+     * @param kafkaHeader
+     * 
+     * @throws InvalidTopicException
+     * @throws InternalServerException
+     * @throws TransactionTimedOutException
+     */
+    @Recover
+    public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
+            throws InvalidTopicException, InternalServerException {
+        long startedAt = System.currentTimeMillis();
+        log.info("Started method X at time: " + startedAt);
+        try {
+            log.info("Inside publishMessageOnRetryOrDltTopic ");
+            if ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException)) {
+                var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
+                configValidator.validateInputs(retryTopic);
+                ProducerRecord<String, T> producerRecord = new ProducerRecord<>(retryTopic, message);
+                addHeaders(producerRecord.headers(), kafkaHeader);
+                publishOnTopic(producerRecord);
+                log.info("Publish message to kafka Retry topic");
+            }
+
+        } catch (InvalidTopicException ex) {
+            log.error("Exception Occured while searching for Retry Topic", ex);
+            throw ex;
+        } catch (InternalServerException ex) {
+            log.error("unable to push message to kafka ", ex);
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Exception: ", ex);
+            throw ex;
+        }
+        long finishedAt = System.currentTimeMillis();
+        log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt) + " milliseconds");
     }
 
 }
