@@ -131,17 +131,17 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         log.info("Started method X at time: " + startedAt);
         try {
             log.info("Inside publishMessageOnRetryOrDltTopic ");
-            var topicToBeUsed = ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException))
+            var errorTopic = ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException))
                     ? context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC)
                     : context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
-            configValidator.validateInputs(topicToBeUsed);
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(topicToBeUsed, message);
+            configValidator.validateInputs(errorTopic);
+            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(errorTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
             log.info("Publish message to kafka retry or Dead letter topic");
 
         } catch (InvalidTopicException ex) {
-            log.error("Exception Occured while searching for Retry Topic", ex);
+            log.error("Exception Occured while searching for Retry or Dead Letter Topic", ex);
             throw ex;
         } catch (InternalServerException ex) {
             log.error("unable to push message to kafka ", ex);

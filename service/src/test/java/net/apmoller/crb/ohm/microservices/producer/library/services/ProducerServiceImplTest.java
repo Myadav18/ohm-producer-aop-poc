@@ -349,4 +349,48 @@ public class ProducerServiceImplTest {
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
 
+    @Test
+    void testRecoverForSerailizationExceptionValidateTopic() {
+        String message = "test Message";
+        long offset = 1L;
+        int partition = 2;
+        String deadLetterTopic = null;
+        SendResult<String, Object> sendResult = mock(SendResult.class);
+        ListenableFuture<SendResult<String, T>> responseFuture = mock(ListenableFuture.class);
+
+        RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(deadLetterTopic, partition), offset, 0L,
+                0L, 0L, 0, 0);
+        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
+        doAnswer(invocationOnMock -> {
+            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
+            listenableFutureCallback.onSuccess(sendResult);
+            assertEquals(sendResult.getRecordMetadata().offset(), offset);
+            assertEquals(sendResult.getRecordMetadata().partition(), partition);
+            return null;
+        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        try {
+             when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(InvalidTopicException.class);
+             producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
+            } catch (InvalidTopicException e) {
+                log.info("Topic placeholder is Not correct or it's Empty");
+            }
+        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+    }
+
+    @Test
+    void testDeadLetterTopicNotFound() throws InvalidTopicException {
+        String message = "test Message";
+        String deadLetterTopic = "";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        try {
+            doThrow(InvalidTopicException.class).when(validate).validateInputs(any());
+            producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
+        } catch (InvalidTopicException e) {
+            log.info("Message can't be published to kafka topic topic");
+        }
+        Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
+    }
 }
