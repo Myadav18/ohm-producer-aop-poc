@@ -8,46 +8,12 @@ pr:
     include:
       - master
       - develop
-      - release/*
 
 trigger:
   branches:
     include:
       - master
       - develop
-      - release/*
-      - hotfix/*
-      - feature/*
-
-  paths:
-    exclude:
-    - spec/src/main/resources/apigeeConfig.yaml
-    - spec/src/main/resources/azure-MAMCLI.yml
-    - spec/src/main/resources/swagger.yml
-
-resources:
-  repositories:
-    - repository: importsbuildtemplate
-      type: github
-      name: Maersk-Global/imports-build-templates
-      ref: refs/heads/main
-      endpoint: ADOtoGitHub
-    - repository: BDTemplateRepo
-      type: github
-      name: Maersk-Global/DOT-AzureDevops-CICD-templates
-      ref: refs/heads/master # use master branch as default
-      endpoint: ADOtoGitHub
-    - repository: PolarisTemplateRepo
-      type: github
-      name: Maersk-Global/DOT-AzureDevops-CICD-templates
-      ref: refs/heads/master # use master branch as default
-      endpoint: ADOtoGitHub
-    - repository: self
-
-variables:
-  tag: '$(Build.BuildNumber)'
-  ImageName: ohm/ohm-kafkaproducer
-  NexusConnection: NexusMaerskDevNetRW-OH-Modernization
 
 pool:
   vmImage: 'ubuntu-latest'
