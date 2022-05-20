@@ -6,6 +6,7 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalSe
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.InvalidTopicException;
+import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -114,7 +115,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     /**
      * Method Sends the Message to Retry Or DLT Topic.
-     * 
+     *
      * @param e
      * @param message
      * @param kafkaHeader
@@ -130,14 +131,14 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         log.info("Started method X at time: " + startedAt);
         try {
             log.info("Inside publishMessageOnRetryOrDltTopic ");
-            if ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException)) {
-                var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
-                configValidator.validateInputs(retryTopic);
-                ProducerRecord<String, T> producerRecord = new ProducerRecord<>(retryTopic, message);
-                addHeaders(producerRecord.headers(), kafkaHeader);
-                publishOnTopic(producerRecord);
-                log.info("Publish message to kafka Retry topic");
-            }
+            var topicToBeUsed = ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException))
+                    ? context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC)
+                    : context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
+            configValidator.validateInputs(topicToBeUsed);
+            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(topicToBeUsed, message);
+            addHeaders(producerRecord.headers(), kafkaHeader);
+            publishOnTopic(producerRecord);
+            log.info("Publish message to kafka retry or Dead letter topic");
 
         } catch (InvalidTopicException ex) {
             log.error("Exception Occured while searching for Retry Topic", ex);
