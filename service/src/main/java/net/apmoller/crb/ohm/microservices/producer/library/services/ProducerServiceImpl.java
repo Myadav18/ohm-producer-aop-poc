@@ -126,7 +126,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         try {
             log.info("Inside publishMessageOnRetryOrDltTopic ");
             var errorTopic = getErrorTopic(e);
-            configValidator.validateInputs(errorTopic);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(errorTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
