@@ -32,16 +32,6 @@ public class ConfigValidatorTest {
     }
 
     @Test
-    void testInvalidTopicPlaceholder() {
-        String producerTopic = "${";
-        try {
-            Validator.validateInputs(producerTopic);
-        } catch (InvalidTopicException ex) {
-            log.info("Topic Placeholder is not valid");
-        }
-    }
-
-    @Test
     void testInvalidServerPlaceholder() {
         String producerTopic = "test";
         try {

@@ -52,6 +52,12 @@ public class ProducerServiceImplTest {
     private TransactionTimedOutException transactionTimedOutException;
 
     @MockBean
+    private InvalidTopicException invalidTopicException;
+
+    @MockBean
+    private KafkaServerNotFoundException kafkaServerNotFoundException;
+
+    @MockBean
     private NullPointerException nullPointerException;
 
     @MockBean
@@ -59,7 +65,6 @@ public class ProducerServiceImplTest {
 
     @Autowired
     private ProducerServiceImpl producerServiceImpl;
-
 
     @Test
     void testMessageSentToTopic() {
@@ -371,25 +376,54 @@ public class ProducerServiceImplTest {
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
-             when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(InvalidTopicException.class);
-             producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
-            } catch (InvalidTopicException e) {
-                log.info("Topic placeholder is Not correct or it's Empty");
-            }
+            when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(InvalidTopicException.class);
+            producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
+        } catch (InvalidTopicException e) {
+            log.info("Topic placeholder is Not correct or it's Empty");
+        }
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
 
     @Test
-    void testDeadLetterTopicNotFound() throws InvalidTopicException {
+    void testDeadLetterTopicNotFound() {
+        String message = "test Message";
+        String deadLetterTopic = "test";
+        String retryTopic = "test";
+        String dltTopic = "test";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        try {
+            producerServiceImpl.publishMessageOnRetryOrDltTopic(invalidTopicException, message, kafkaHeader);
+        } catch (InvalidTopicException e) {
+            log.info("Message can't be published to kafka topic topic");
+        }
+        Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
+    }
+
+    @Test
+    void testInvalidMainTopic() throws InvalidTopicException {
         String message = "test Message";
         String deadLetterTopic = "";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
-            doThrow(InvalidTopicException.class).when(validate).validateInputs(any());
-            producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
+            producerServiceImpl.publishMessageOnRetryOrDltTopic(invalidTopicException, message, kafkaHeader);
         } catch (InvalidTopicException e) {
             log.info("Message can't be published to kafka topic topic");
+        }
+        Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
+    }
+
+    @Test
+    void testInvalidBootstarpServer() {
+        String message = "test Message";
+        String deadLetterTopic = "";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        try {
+            producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaServerNotFoundException, message, kafkaHeader);
+        } catch (KafkaServerNotFoundException e) {
+            log.info("Invalid Kafka bootStrap Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
