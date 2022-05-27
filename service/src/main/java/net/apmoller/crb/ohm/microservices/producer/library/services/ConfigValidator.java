@@ -48,7 +48,7 @@ public class ConfigValidator {
      * Method to validate topic and bootstrap server before posting message to kafka topic.
      * @param topics
      */
-    public void validateRequestParams(Map<String, String> topics) {
+    public void validateInputsForMultipleProducerFlow(Map<String, String> topics) {
 
         log.info("Topics map passed in input: {}", topics);
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);

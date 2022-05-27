@@ -43,7 +43,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             throws InvalidTopicException, KafkaServerNotFoundException, InternalServerException {
         long startedAt = System.currentTimeMillis();
         try {
-            configValidator.validateRequestParams(topics);
+            configValidator.validateInputsForMultipleProducerFlow(topics);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY), message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
         } catch (Exception ex) {
