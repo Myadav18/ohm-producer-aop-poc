@@ -1,7 +1,5 @@
 package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
-import net.apmoller.crb.ohm.microservices.producer.library.models.User;
-import net.apmoller.crb.ohm.microservices.producer.library.producer.KafkaConfig;
 import org.springframework.kafka.core.ProducerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -54,7 +52,7 @@ public class KafkaConfigTest {
     @Test
     @DisplayName("User Producer Factory")
     public void userProducerFactory() {
-        ProducerFactory<String, User> producerFactory = kafkaConfig.producerFactory();
+        ProducerFactory<String, Object> producerFactory = kafkaConfig.producerFactory();
         assertNotNull(producerFactory, "UserProducerFactory should not be null");
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
@@ -41,6 +42,57 @@ public class ConfigValidator {
         if (bootstrapServer.startsWith("${")) {
             throw new KafkaServerNotFoundException("Placeholder for Bootstrap Server is not Correct");
         }
+    }
 
+    /**
+     * Method to validate topic and bootstrap server before posting message to kafka topic.
+     * @param topics
+     */
+    public void validateInputsForMultipleProducerFlow(Map<String, String> topics) {
+
+        log.info("Topics map passed in input: {}", topics);
+        var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
+        log.info("bootstrapServer from application context: {}", bootstrapServer);
+        if (Objects.isNull(topics) || topics.isEmpty()) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_TOPIC_MAP_ERROR_MSG);
+        } else {
+            if (notificationTopicNotPresent(topics))
+                throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
+            if (retryTopicNotPresent(topics))
+                throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
+            if (dltNotPresent(topics))
+                throw new InvalidTopicException(ConfigConstants.INVALID_DLT_ERROR_MSG);
+        }
+
+        if (bootstrapServer.isEmpty() || bootstrapServer.startsWith("${")) {
+            throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG);
+        }
+    }
+
+    /**
+     * Method checks if input map contains target topic name
+     * @param topics
+     */
+    private boolean notificationTopicNotPresent(Map<String, String> topics) {
+        return !topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
+                || (topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)));
+    }
+
+    /**
+     * Method checks if input map contains retry topic name
+     * @param topics
+     */
+    private boolean retryTopicNotPresent(Map<String, String> topics) {
+        return !topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
+                || (topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)));
+    }
+
+    /**
+     * Method checks if input map contains dead letter topic name
+     * @param topics
+     */
+    private boolean dltNotPresent(Map<String, String> topics) {
+        return !topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY)
+                || (topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY)));
     }
 }

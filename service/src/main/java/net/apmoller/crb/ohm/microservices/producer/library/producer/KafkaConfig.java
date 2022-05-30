@@ -2,14 +2,12 @@ package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
 import io.micrometer.core.instrument.ImmutableTag;
 import io.micrometer.core.instrument.Metrics;
-import net.apmoller.crb.ohm.microservices.producer.library.models.User;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.*;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
@@ -81,7 +79,7 @@ public class KafkaConfig implements KafkaListenerConfigurer {
     }
 
     @Bean
-    public ProducerFactory<String, User> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> properties = new HashMap<>();
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -96,8 +94,8 @@ public class KafkaConfig implements KafkaListenerConfigurer {
         addSaslProperties(properties, saslMechanism, securityProtocol, loginModule, username, password);
         addTruststoreProperties(properties, truststoreLocation, truststorePassword);
 
-        DefaultKafkaProducerFactory<String, User> producerFactory = new DefaultKafkaProducerFactory<>(properties);
-        producerFactory.addListener(new MicrometerProducerListener<String, User>(Metrics.globalRegistry,
+        DefaultKafkaProducerFactory<String, Object> producerFactory = new DefaultKafkaProducerFactory<>(properties);
+        producerFactory.addListener(new MicrometerProducerListener<String, Object>(Metrics.globalRegistry,
                 Collections.singletonList(new ImmutableTag("customTag", "customTagValue"))));
 
         return producerFactory;
