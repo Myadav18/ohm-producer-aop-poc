@@ -22,7 +22,7 @@ public class ConfigValidator {
 
     /**
      * Method checks the validation before posting message to kafka topic.
-     * 
+     *
      * @param producerTopic
      */
     public void validateInputs(String producerTopic) {
@@ -31,19 +31,61 @@ public class ConfigValidator {
         var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
         var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
 
-        if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
-            throw new InvalidTopicException("Topic name is not valid , it can't be null or Empty");
-        } else if (Objects.isNull(retryTopic) || retryTopic.isEmpty()) {
-            throw new InvalidTopicException("Retry Topic name is not valid , it can't be null or Empty");
-        } else if (Objects.isNull(dltTopic) || dltTopic.isEmpty()) {
-            throw new InvalidTopicException("Dlt Topic name is not valid , it can't be null or Empty");
-        }
-        if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
-            throw new KafkaServerNotFoundException("Bootstrap details cannot be empty, so unable to be connect");
-        }
+        notificationTopicValidation(producerTopic);
+        bootstrapServerValidation(bootstrapServer);
+        retryTopicValidation(retryTopic);
+        dltTopicValidation(dltTopic);
+    }
 
+    /**
+     * Method checks if Main topic is Valid.
+     *
+     * @param producerTopic
+     */
+    private void notificationTopicValidation(String producerTopic) {
+        if ((producerTopic.startsWith("${"))) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_PLACEHOLDER);
+        } else if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
+        }
+    }
+
+    /**
+     * Method checks if retry topic is Valid.
+     *
+     * @param retryTopic
+     */
+    private void retryTopicValidation(String retryTopic) {
+        if ((retryTopic.startsWith("${"))) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_PLACEHOLDER);
+        } else if (Objects.isNull(retryTopic) || retryTopic.isEmpty()) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
+        }
+    }
+
+    /**
+     * Method checks if dead letter topic is valid.
+     *
+     * @param dltTopic
+     */
+    private void dltTopicValidation(String dltTopic) {
+        if (dltTopic.startsWith("${")) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_TOPIC_PLACEHOLDER);
+        } else if ((Objects.isNull(dltTopic) || dltTopic.isEmpty())) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_ERROR_MSG);
+        }
+    }
+
+    /**
+     * Method checks if bootstrapServer is valid.
+     *
+     * @param bootstrapServer
+     */
+    private void bootstrapServerValidation(String bootstrapServer) {
         if (bootstrapServer.startsWith("${")) {
-            throw new KafkaServerNotFoundException("Placeholder for Bootstrap Server is not Correct");
+            throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_PLACEHOLDER);
+        } else if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
+            throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG);
         }
     }
 

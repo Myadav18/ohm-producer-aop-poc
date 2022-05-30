@@ -1,0 +1,34 @@
+{
+  "namespace": "net.apmoller.ohm.adapter.avro.model",
+  "type": "record",
+  "name": "EventNotificationsAdapterModel",
+  "fields": [
+    {
+      "name": "response",
+      "type": "string"
+    },
+    {
+      "name": "correlationId",
+      "type": "string"
+    },
+    {
+      "name": "messageType",
+      "type": "string"
+    },
+    {
+      "name": "sourceSystem",
+      "type": "string"
+    },
+    {
+      "name": "messageId",
+      "type": "string"
+    },
+    {
+      "name": "responseConsumers",
+      "type": {
+        "type": "array",
+        "items": "string"
+       }
+    }
+  ]
+}

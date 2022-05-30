@@ -1,6 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
+import net.apmoller.crb.ohm.microservices.producer.library.compression.CompressionService;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
@@ -38,6 +39,9 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Autowired
     private KafkaTemplate<String, T> kafkaTemplate;
 
+    @Autowired
+    private CompressionService<T> compressionService;
+
     /**
      * Method is used to Send Message to kafka topic after validations.
      * 
@@ -55,9 +59,9 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
         long startedAt = System.currentTimeMillis();
         try {
-            log.info("Inside produceMessages ");
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic);
+            compressionService.compressMessage(message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
@@ -124,7 +128,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws InvalidTopicException, KafkaServerNotFoundException, InternalServerException {
         long startedAt = System.currentTimeMillis();
         try {
-            log.info("Inside publishMessageOnRetryOrDltTopic ");
             var errorTopic = getErrorTopic(e);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(errorTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);

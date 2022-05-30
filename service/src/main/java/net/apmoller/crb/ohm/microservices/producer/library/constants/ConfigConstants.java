@@ -21,4 +21,9 @@ public class ConfigConstants {
     public static final String INVALID_DLT_ERROR_MSG = "Dead letter topic name cannot be null or Empty";
     public static final String INVALID_BOOTSTRAP_SERVER_ERROR_MSG = "Bootstrap server name cannot be null or empty";
 
+    public static final String INVALID_NOTIFICATION_TOPIC_PLACEHOLDER = "Placeholder for Main_topic is not valid";
+    public static final String INVALID_RETRY_TOPIC_PLACEHOLDER = "Placeholder for Retry_topic is not valid";
+    public static final String INVALID_DLT_TOPIC_PLACEHOLDER = "Placeholder for Dlt_Topic is not valid";
+    public static final String INVALID_BOOTSTRAP_PLACEHOLDER = "Placeholder for Bootstrap Server is not Correct";
+
 }

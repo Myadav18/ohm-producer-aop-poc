@@ -1,7 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.compression;
 
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import org.apereo.cas.util.CompressionUtils;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +16,6 @@ public class CompressionServiceImpl<T> implements CompressionService<T> {
      * @param message
      * 
      * @return
-     * 
-     * @throws InternalServerException
      */
     @Override
     public T compressMessage(T message) {
@@ -37,6 +34,7 @@ public class CompressionServiceImpl<T> implements CompressionService<T> {
             }
         } catch (Exception e) {
             log.error("unable to Compress and Encode the Payload : ", e);
+            throw e;
         }
         return compressedPayload;
     }
