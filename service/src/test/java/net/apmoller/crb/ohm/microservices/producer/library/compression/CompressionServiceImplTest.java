@@ -2,7 +2,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.compression;
 
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.ohm.adapter.avro.model.EventNotificationsAdapterModel;
-import org.json.JSONObject;
+import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +61,7 @@ public class CompressionServiceImplTest<T> {
         String testPayload = "{\n"
                 + "    \"response\": \"<?xml version=\\\"1.0\\\" encoding=\\\"UTF-8\\\"?> <db_response type=\\\"db_extract_package\\\" version=\\\"2\\\" revision=\\\"0\\\"> <response error=\\\"0\\\" returncode=\\\"0\\\" origin=\\\"DMS:SCRBDBKDK007206\\\"> <returnstring source=\\\"Docengine\\\">Added ply [1] by index</returnstring> </response> <container> <archive save=\\\"true\\\" doctype=\\\"\\\" docid=\\\"RNKT00003\\\" expirydate=\\\"2022-10-04\\\"><domain>WCAIND</domain><code>0A732E774E34615B25315973EA2C</code><index_s>2ab97fda-55dd-4ae3-a379-88f45e0a3b37</index_s><index_m>43e4be58-9c54-493f-ad40-6847bad741a5</index_m></archive></container></db_response>\"\n"
                 + "}";
-        JSONObject response = new JSONObject(testPayload);
+        JSONObject response = new JSONObject();
         assertThrows(Exception.class, () -> compressionServiceImpl.compressMessage(response));
     }
 
