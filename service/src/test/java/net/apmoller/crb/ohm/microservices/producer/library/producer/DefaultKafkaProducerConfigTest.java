@@ -1,29 +1,30 @@
 package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
+import org.mockito.Mock;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
+import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.kafka.core.ProducerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
 @DisplayName("Kafka Config Test")
-public class KafkaConfigTest {
+public class DefaultKafkaProducerConfigTest {
 
-    private KafkaConfig kafkaConfig;
-
-    @MockBean
-    private LocalValidatorFactoryBean validator;
+    private DefaultKafkaProducerConfig kafkaConfig;
+    @Mock
+    private DefaultKafkaProducerFactory defaultKafkaProducerFactory;
 
     @BeforeEach
     public void setUp() {
-        kafkaConfig = new KafkaConfig(validator);
+        kafkaConfig = new DefaultKafkaProducerConfig();
 
         ReflectionTestUtils.setField(kafkaConfig, "bootstrapServers", "testServer:9092");
         ReflectionTestUtils.setField(kafkaConfig, "securityProtocol", "SASL_SSL");
@@ -54,5 +55,22 @@ public class KafkaConfigTest {
     public void userProducerFactory() {
         ProducerFactory<String, Object> producerFactory = kafkaConfig.producerFactory();
         assertNotNull(producerFactory, "UserProducerFactory should not be null");
+    }
+
+    @Test
+    @DisplayName("User Producer Factory for AvroSerilaizer")
+    public void userProducerFactoryForAvro() {
+        ReflectionTestUtils.setField(kafkaConfig, "avroEnabled", true);
+        ReflectionTestUtils.setField(kafkaConfig, "schemaRegistryUrl", "url");
+        ReflectionTestUtils.setField(kafkaConfig, "schemaRegistryUserInfo", "IABC:vk");
+        ProducerFactory<String, Object> producerFactory = kafkaConfig.producerFactory();
+        assertNotNull(producerFactory, "UserProducerFactory should not be null");
+    }
+
+    @Test
+    @DisplayName("Kafka Admin")
+    public void kafkaAdmin() {
+        KafkaAdmin kafkaAdmin = kafkaConfig.kafkaAdmin();
+        assertNotNull(kafkaAdmin, "KafkaAdmin should not be null");
     }
 }
