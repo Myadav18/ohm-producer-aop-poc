@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +25,7 @@ public class CompressionServiceImplTest<T> {
     private CompressionServiceImpl compressionServiceImpl;
 
     @Test
-    void teststringCompression() {
+    void teststringCompression() throws IOException {
         String message = TestPayload.jsonPayload();
         Object compressedPayload = compressionServiceImpl.compressMessage(message);
         Assertions.assertTrue((message.length()) > (compressedPayload.toString().length()));
@@ -31,7 +33,7 @@ public class CompressionServiceImplTest<T> {
     }
 
     @Test
-    void testAvroMessage() {
+    void testAvroMessage() throws IOException {
         List<String> downstream = new ArrayList<>();
         downstream.add("documentservice");
         String testPayload = "{\n"
@@ -46,14 +48,14 @@ public class CompressionServiceImplTest<T> {
     }
 
     @Test
-    void testNullMessage() {
+    void testNullMessage() throws IOException {
         String message = null;
         Object compressedPayload = compressionServiceImpl.compressMessage(message);
         Assertions.assertTrue((compressedPayload == null));
     }
 
     @Test
-    void testAvroMessageException() {
+    void testAvroMessageException() throws IOException {
         List<String> downstream = new ArrayList<>();
         downstream.add("documentservice");
         String testPayload = "{\n"

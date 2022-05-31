@@ -4,10 +4,11 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalSe
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.common.errors.InvalidTopicException;
 
+import java.io.IOException;
 import java.util.Map;
 
 public interface ProducerService<T> {
 
     void produceMessages(T message, Map<String, Object> kafkaHeader)
-            throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException;
+            throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException, IOException;
 }

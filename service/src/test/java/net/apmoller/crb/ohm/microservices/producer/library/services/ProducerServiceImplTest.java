@@ -25,6 +25,7 @@ import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +72,7 @@ public class ProducerServiceImplTest {
     private ProducerServiceImpl producerServiceImpl;
 
     @Test
-    void testMessageSentToTopic() {
+    void testMessageSentToTopic() throws IOException {
         String message = "test Message";
         long offset = 1L;
         int partition = 2;
@@ -116,7 +117,7 @@ public class ProducerServiceImplTest {
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
         try {
             producerServiceImpl.produceMessages(message, kafkaHeader);
-        } catch (InternalServerException e) {
+        } catch (InternalServerException | IOException e) {
             log.info("Message can't be published to kafka topic topic");
         }
         Mockito.verify(kafkaTemplate, times(1)).send((ProducerRecord) any());
@@ -131,7 +132,7 @@ public class ProducerServiceImplTest {
         try {
             doThrow(InvalidTopicException.class).when(validate).validateInputs(any());
             producerServiceImpl.produceMessages(message, kafkaHeader);
-        } catch (InvalidTopicException e) {
+        } catch (InvalidTopicException | IOException e) {
             log.info("Message can't be published to kafka topic topic");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
@@ -145,7 +146,7 @@ public class ProducerServiceImplTest {
         try {
             doThrow(KafkaServerNotFoundException.class).when(validate).validateInputs(any());
             producerServiceImpl.produceMessages(message, kafkaHeader);
-        } catch (KafkaServerNotFoundException e) {
+        } catch (KafkaServerNotFoundException | IOException e) {
             log.info("Unable to Connect the Kafka Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());

@@ -47,12 +47,6 @@
         <artifactId>kafka-avro-serializer</artifactId>
         <version>6.2.1</version>
       </dependency>
-      <dependency>
-        <groupId>org.apereo.cas</groupId>
-        <artifactId>cas-server-core-util</artifactId>
-        <version>6.5.4</version>
-      </dependency>
-
           </dependencies>
 
   <build>

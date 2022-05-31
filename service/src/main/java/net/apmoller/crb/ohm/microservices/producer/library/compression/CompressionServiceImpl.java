@@ -1,9 +1,10 @@
 package net.apmoller.crb.ohm.microservices.producer.library.compression;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apereo.cas.util.CompressionUtils;
+import net.apmoller.crb.ohm.microservices.producer.library.util.CompressionUtil;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
@@ -18,13 +19,13 @@ public class CompressionServiceImpl<T> implements CompressionService<T> {
      * @return
      */
     @Override
-    public T compressMessage(T message) {
+    public T compressMessage(T message) throws IOException {
         T compressedPayload = null;
         try {
             if (Objects.nonNull(message)) {
                 log.info("Original payload size: {} bytes", message.toString().getBytes(StandardCharsets.UTF_8).length);
                 if (message instanceof String) {
-                    compressedPayload = (T) CompressionUtils.compress(message.toString());
+                    compressedPayload = (T) CompressionUtil.compressAndReturnB64(message.toString());
                 } else {
                     CustomAvroSerializer avroSerializer = new CustomAvroSerializer();
                     compressedPayload = (T) avroSerializer.serialize(null, null, message);

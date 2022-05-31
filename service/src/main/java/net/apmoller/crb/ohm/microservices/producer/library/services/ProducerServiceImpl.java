@@ -22,6 +22,7 @@ import org.springframework.transaction.TransactionTimedOutException;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
@@ -56,7 +57,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader)
-            throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException {
+            throws InvalidTopicException, InternalServerException, KafkaServerNotFoundException, IOException {
         long startedAt = System.currentTimeMillis();
         try {
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
