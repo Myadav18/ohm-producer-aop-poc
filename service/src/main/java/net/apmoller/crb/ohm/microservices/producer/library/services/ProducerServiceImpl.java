@@ -62,7 +62,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         try {
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic);
-            compressionService.compressMessage(message);
+            message = compressionService.compressMessage(message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
@@ -126,10 +126,11 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      */
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
-            throws InvalidTopicException, KafkaServerNotFoundException, InternalServerException {
+            throws InvalidTopicException, KafkaServerNotFoundException, InternalServerException, IOException {
         long startedAt = System.currentTimeMillis();
         try {
             var errorTopic = getErrorTopic(e);
+            message = compressionService.compressMessage(message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(errorTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);

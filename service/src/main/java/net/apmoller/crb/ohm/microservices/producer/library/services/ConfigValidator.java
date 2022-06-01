@@ -43,10 +43,10 @@ public class ConfigValidator {
      * @param producerTopic
      */
     private void notificationTopicValidation(String producerTopic) {
-        if ((producerTopic.startsWith("${"))) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_PLACEHOLDER);
-        } else if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
+        if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
             throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
+        } else if ((producerTopic.startsWith("${"))) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_PLACEHOLDER);
         }
     }
 
@@ -56,10 +56,10 @@ public class ConfigValidator {
      * @param retryTopic
      */
     private void retryTopicValidation(String retryTopic) {
-        if ((retryTopic.startsWith("${"))) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_PLACEHOLDER);
-        } else if (Objects.isNull(retryTopic) || retryTopic.isEmpty()) {
+        if (Objects.isNull(retryTopic) || retryTopic.isEmpty()) {
             throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
+        } else if ((retryTopic.startsWith("${"))) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_PLACEHOLDER);
         }
     }
 
@@ -69,10 +69,10 @@ public class ConfigValidator {
      * @param dltTopic
      */
     private void dltTopicValidation(String dltTopic) {
-        if (dltTopic.startsWith("${")) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_TOPIC_PLACEHOLDER);
-        } else if ((Objects.isNull(dltTopic) || dltTopic.isEmpty())) {
+        if ((Objects.isNull(dltTopic) || dltTopic.isEmpty())) {
             throw new InvalidTopicException(ConfigConstants.INVALID_DLT_ERROR_MSG);
+        } else if (dltTopic.startsWith("${")) {
+            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_TOPIC_PLACEHOLDER);
         }
     }
 
@@ -82,10 +82,10 @@ public class ConfigValidator {
      * @param bootstrapServer
      */
     private void bootstrapServerValidation(String bootstrapServer) {
-        if (bootstrapServer.startsWith("${")) {
-            throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_PLACEHOLDER);
-        } else if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
+        if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
             throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG);
+        } else if (bootstrapServer.startsWith("${")) {
+            throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_PLACEHOLDER);
         }
     }
 

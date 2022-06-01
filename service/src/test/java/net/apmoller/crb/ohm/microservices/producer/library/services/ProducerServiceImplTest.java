@@ -196,7 +196,7 @@ public class ProducerServiceImplTest {
         try {
             when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(InvalidTopicException.class);
             producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, message, kafkaHeader);
-        } catch (InvalidTopicException e) {
+        } catch (InvalidTopicException | IOException e) {
             log.info("Topic placeholder is Not correct or it's Empty");
         }
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
@@ -215,7 +215,7 @@ public class ProducerServiceImplTest {
         try {
             when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(TransactionTimedOutException.class);
             producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, message, kafkaHeader);
-        } catch (TransactionTimedOutException e) {
+        } catch (TransactionTimedOutException | IOException e) {
             log.info("TransactionTimedOutException Occured");
         }
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
@@ -272,7 +272,7 @@ public class ProducerServiceImplTest {
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, message, kafkaHeader);
-        } catch (InternalServerException e) {
+        } catch (InternalServerException | IOException e) {
             log.info("Message can't be published to kafka Retry topic topic");
         }
         Mockito.verify(kafkaTemplate, times(1)).send((ProducerRecord) any());
@@ -383,7 +383,7 @@ public class ProducerServiceImplTest {
         try {
             when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(InvalidTopicException.class);
             producerServiceImpl.publishMessageOnRetryOrDltTopic(serializationException, message, kafkaHeader);
-        } catch (InvalidTopicException e) {
+        } catch (InvalidTopicException | IOException e) {
             log.info("Topic placeholder is Not correct or it's Empty");
         }
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
@@ -399,7 +399,7 @@ public class ProducerServiceImplTest {
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(invalidTopicException, message, kafkaHeader);
-        } catch (InvalidTopicException e) {
+        } catch (InvalidTopicException | IOException e) {
             log.info("Message can't be published to kafka topic topic");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
@@ -413,7 +413,7 @@ public class ProducerServiceImplTest {
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(invalidTopicException, message, kafkaHeader);
-        } catch (InvalidTopicException e) {
+        } catch (InvalidTopicException | IOException e) {
             log.info("Message can't be published to kafka topic topic");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
@@ -427,7 +427,7 @@ public class ProducerServiceImplTest {
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaServerNotFoundException, message, kafkaHeader);
-        } catch (KafkaServerNotFoundException e) {
+        } catch (KafkaServerNotFoundException | IOException e) {
             log.info("Invalid Kafka bootStrap Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());

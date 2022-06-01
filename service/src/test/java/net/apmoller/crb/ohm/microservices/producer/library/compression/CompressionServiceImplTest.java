@@ -51,7 +51,7 @@ public class CompressionServiceImplTest<T> {
     void testNullMessage() throws IOException {
         String message = null;
         Object compressedPayload = compressionServiceImpl.compressMessage(message);
-        Assertions.assertTrue((compressedPayload == null));
+        Assertions.assertEquals(null, compressedPayload);
     }
 
     @Test
