@@ -1,5 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.producer;
 
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.mockito.Mock;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaAdmin;
@@ -12,6 +13,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import static org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @ExtendWith(SpringExtension.class)
@@ -65,6 +68,15 @@ public class DefaultKafkaProducerConfigTest {
         ReflectionTestUtils.setField(kafkaConfig, "schemaRegistryUserInfo", "IABC:vk");
         ProducerFactory<String, Object> producerFactory = kafkaConfig.producerFactory();
         assertNotNull(producerFactory, "UserProducerFactory should not be null");
+    }
+
+    @Test
+    @DisplayName("User Producer Factory for AvroSerilaizer")
+    public void userProducerFactoryWithoutAvro() {
+        ReflectionTestUtils.setField(kafkaConfig, "avroEnabled", false);
+        ProducerFactory<String, Object> producerFactory = kafkaConfig.producerFactory();
+        assertNotNull(producerFactory, "UserProducerFactory should not be null");
+        assertEquals(StringSerializer.class,producerFactory.getConfigurationProperties().get(VALUE_SERIALIZER_CLASS_CONFIG));
     }
 
     @Test
