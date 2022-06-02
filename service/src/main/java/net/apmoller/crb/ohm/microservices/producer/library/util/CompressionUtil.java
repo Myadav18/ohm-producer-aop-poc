@@ -15,19 +15,34 @@ import java.util.zip.DeflaterOutputStream;
 public class CompressionUtil {
 
     public static String compressAndReturnB64(String text) throws IOException {
-        return new String(Base64.getEncoder().encode(compress(text)));
+        try {
+            return new String(Base64.getEncoder().encode(compress(text)));
+        } catch (Exception e) {
+            log.error("Exception Occured during Compression");
+            throw e;
+        }
     }
 
     public static byte[] compress(String text) throws IOException {
-        return compress(text.getBytes());
+        try {
+            if (!text.isEmpty())
+                return compress(text.getBytes());
+        } catch (Exception e) {
+            log.error("Payload can't be null or Empty");
+            throw e;
+        }
+        return null;
     }
 
     public static byte[] compress(byte[] bArray) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-        try (DeflaterOutputStream dos = new DeflaterOutputStream(os)) {
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
+                DeflaterOutputStream dos = new DeflaterOutputStream(os)) {
             dos.write(bArray);
+            return os.toByteArray();
+        } catch (Exception e) {
+            log.error("Exception Occured while Compressing and Encoding String Payload");
+            throw e;
         }
-        return os.toByteArray();
     }
 
 }

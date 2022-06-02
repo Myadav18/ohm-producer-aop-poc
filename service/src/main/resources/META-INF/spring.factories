@@ -2,7 +2,5 @@ org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 net.apmoller.crb.ohm.microservices.producer.library.services.ProducerServiceImpl,\
 net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator,\
 net.apmoller.crb.ohm.microservices.producer.library.services.KafkaProducerServiceImpl,\
-net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil,\
-net.apmoller.crb.ohm.microservices.producer.library.compression.CompressionServiceImpl,\
-net.apmoller.crb.ohm.microservices.producer.library.producer.DefaultKafkaProducerConfig
+net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil
 

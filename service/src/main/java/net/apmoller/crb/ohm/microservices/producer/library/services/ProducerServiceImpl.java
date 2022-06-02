@@ -1,13 +1,11 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.compression.CompressionService;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.InvalidTopicException;
-import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +38,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Autowired
     private KafkaTemplate<String, T> kafkaTemplate;
 
-    @Autowired
-    private CompressionService<T> compressionService;
-
     /**
      * Method is used to Send Message to kafka topic after validations.
      * 
@@ -62,7 +57,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         try {
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic);
-            message = compressionService.compressMessage(message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);
@@ -130,7 +124,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         long startedAt = System.currentTimeMillis();
         try {
             var errorTopic = getErrorTopic(e);
-            message = compressionService.compressMessage(message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(errorTopic, message);
             addHeaders(producerRecord.headers(), kafkaHeader);
             publishOnTopic(producerRecord);

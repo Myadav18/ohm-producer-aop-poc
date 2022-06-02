@@ -1,7 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.compression.CompressionService;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -64,9 +63,6 @@ public class ProducerServiceImplTest {
 
     @MockBean
     private SerializationException serializationException;
-
-    @MockBean
-    private CompressionService compressionService;
 
     @Autowired
     private ProducerServiceImpl producerServiceImpl;
