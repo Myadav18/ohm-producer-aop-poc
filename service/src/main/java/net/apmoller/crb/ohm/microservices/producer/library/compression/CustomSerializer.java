@@ -39,15 +39,13 @@ public class CustomSerializer extends KafkaAvroSerializer {
     @Override
     public byte[] serialize(String topic, Headers headers, Object data) {
         byte[] compressedPayload = null;
-        FileOutputStream filePayload = new FileOutputStream(
-                new File("C:\\Users\\0030JA744\\Desktop\\TestPayloadSize.txt"));
         if (Objects.nonNull(data)) {
             log.info("Original payload size: {} bytes", data.toString().getBytes(StandardCharsets.UTF_8).length);
             if (data instanceof String) {
                 log.info("String Compression");
                 compressedPayload = CompressionUtil.compressAndReturnB64(data.toString())
                         .getBytes(StandardCharsets.UTF_8);
-                filePayload.write(compressedPayload);
+
             } else {
                 Schema schema = ReflectData.get().getSchema(data.getClass());
                 log.info("Avro Payload schema: {}", schema.getName());
@@ -58,7 +56,6 @@ public class CustomSerializer extends KafkaAvroSerializer {
 
                     dataFileWriter.append((GenericRecord) data);
                     compressedPayload = Base64.getEncoder().encode(outputStream.toByteArray());
-                    filePayload.write(compressedPayload);
                 } catch (Exception e) {
                     log.info("Exception Occured while Compressing and Encoding");
                     throw e;
