@@ -14,6 +14,12 @@ import java.util.zip.DeflaterOutputStream;
 @Component
 public class CompressionUtil {
 
+    /**
+     * Method will Encode the Compress Message
+     * @param text
+     * @return
+     * @throws IOException
+     */
     public static String compressAndReturnB64(String text) throws IOException {
         try {
             return new String(Base64.getEncoder().encode(compress(text)));
@@ -23,6 +29,12 @@ public class CompressionUtil {
         }
     }
 
+    /**
+     * Method will call compress Method to compress Data.
+     * @param text
+     * @return
+     * @throws IOException
+     */
     public static byte[] compress(String text) throws IOException {
         try {
             if (!text.isEmpty())
@@ -34,6 +46,12 @@ public class CompressionUtil {
         return null;
     }
 
+    /**
+     * Method will Compress and Return the Byte Array.
+     * @param bArray
+     * @return
+     * @throws IOException
+     */
     public static byte[] compress(byte[] bArray) throws IOException {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream();
                 DeflaterOutputStream dos = new DeflaterOutputStream(os)) {
