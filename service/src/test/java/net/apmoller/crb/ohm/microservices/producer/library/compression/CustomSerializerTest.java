@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,12 @@ public class CustomSerializerTest {
         String message = null;
         byte[] compressedPayload = customSerializer.serialize(null, null, message);
         Assertions.assertEquals(null, compressedPayload);
+    }
+
+    @Test
+    public void testEmptyMessage() throws IOException {
+        String message = "";
+        assertThrows(Exception.class, () -> customSerializer.serialize(null, null, message));
     }
 
     @Test

@@ -40,15 +40,17 @@ public class CustomSerializer extends KafkaAvroSerializer {
     public byte[] serialize(String topic, Headers headers, Object data) {
         byte[] compressedPayload = null;
         if (Objects.nonNull(data)) {
+            long startedAt = System.currentTimeMillis();
             log.info("Original payload size: {} bytes", data.toString().getBytes(StandardCharsets.UTF_8).length);
             if (data instanceof String) {
-                log.info("String Compression");
+                log.info("Json/String Compression");
                 compressedPayload = CompressionUtil.compressAndReturnB64(data.toString())
                         .getBytes(StandardCharsets.UTF_8);
 
             } else {
                 Schema schema = ReflectData.get().getSchema(data.getClass());
-                log.info("Avro Payload schema: {}", schema.getName());
+                if (Objects.nonNull(schema))
+                    log.info("Avro Payload schema: {}", schema.getName());
                 DatumWriter<GenericRecord> writer = new ReflectDatumWriter<>(schema);
                 try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                         DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<>(writer)
@@ -63,6 +65,9 @@ public class CustomSerializer extends KafkaAvroSerializer {
             }
             log.info("Compressed payload size: {} bytes",
                     compressedPayload.toString().getBytes(StandardCharsets.UTF_8).length);
+            long finishedAt = System.currentTimeMillis();
+            log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt)
+                    + " milliseconds");
         }
         return compressedPayload;
     }

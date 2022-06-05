@@ -95,8 +95,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         future.addCallback(new ListenableFutureCallback<>() {
             @Override
             public void onSuccess(SendResult<String, T> result) {
-                log.info("Sent message=[{}] with offset=[{}]", producerRecord.value(),
-                        result.getRecordMetadata().offset());
+                log.info("Successfully Compressed Original payload and sent to Kafka");
             }
 
             @Override
