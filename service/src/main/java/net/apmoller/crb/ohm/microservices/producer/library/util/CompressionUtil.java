@@ -16,8 +16,11 @@ public class CompressionUtil {
 
     /**
      * Method will Encode the Compress Message
+     *
      * @param text
+     *
      * @return
+     *
      * @throws IOException
      */
     public static String compressAndReturnB64(String text) throws IOException {
@@ -31,8 +34,11 @@ public class CompressionUtil {
 
     /**
      * Method will call compress Method to compress Data.
+     *
      * @param text
+     *
      * @return
+     *
      * @throws IOException
      */
     public static byte[] compress(String text) throws IOException {
@@ -48,8 +54,11 @@ public class CompressionUtil {
 
     /**
      * Method will Compress and Return the Byte Array.
+     *
      * @param bArray
+     *
      * @return
+     *
      * @throws IOException
      */
     public static byte[] compress(byte[] bArray) throws IOException {
