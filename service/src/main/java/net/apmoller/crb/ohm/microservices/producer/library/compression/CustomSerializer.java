@@ -44,8 +44,7 @@ public class CustomSerializer extends KafkaAvroSerializer {
             log.info("Original payload size: {} bytes", data.toString().getBytes(StandardCharsets.UTF_8).length);
             if (data instanceof String) {
                 log.info("Json/String Compression");
-                compressedPayload = CompressionUtil.compressAndReturnB64(data.toString())
-                        .getBytes(StandardCharsets.UTF_8);
+                compressedPayload = CompressionUtil.compress(data.toString());
 
             } else {
                 Schema schema = ReflectData.get().getSchema(data.getClass());
@@ -57,7 +56,7 @@ public class CustomSerializer extends KafkaAvroSerializer {
                                 .setCodec(CodecFactory.bzip2Codec()).create(schema, outputStream)) {
 
                     dataFileWriter.append((GenericRecord) data);
-                    compressedPayload = Base64.getEncoder().encode(outputStream.toByteArray());
+                    compressedPayload = outputStream.toByteArray();
                 } catch (Exception e) {
                     log.info("Exception Occured while Compressing and Encoding");
                     throw e;

@@ -9,14 +9,14 @@
   </parent>
   <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
   <artifactId>parent</artifactId>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <name>producer-library</name>
   <packaging>pom</packaging>
   <description>producer-library microservice project</description>
 	<modules>
         <module>service</module>
-        <module>spec</module>
-        <module>loadtest</module>
+<!--        <module>spec</module>-->
+<!--        <module>loadtest</module>-->
       </modules>
   <repositories>
     <repository>

@@ -53,14 +53,14 @@ public class CompressionUtil {
      * @throws IOException
      */
     public static byte[] compress(byte[] bArray) throws IOException {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream();
-                DeflaterOutputStream dos = new DeflaterOutputStream(os)) {
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try (DeflaterOutputStream dos = new DeflaterOutputStream(os)) {
             dos.write(bArray);
-            return os.toByteArray();
         } catch (Exception e) {
             log.error("Exception Occured while Compressing and Encoding String Payload");
             throw e;
         }
+        return os.toByteArray();
     }
 
 }
