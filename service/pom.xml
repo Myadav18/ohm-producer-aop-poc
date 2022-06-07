@@ -6,10 +6,10 @@
   <parent>
     <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.0</version>
+    <version>2.0.0</version>
   </parent>
   <artifactId>producer-library-service</artifactId>
-  <version>1.0.0</version>
+  <version>2.0.0</version>
   <name>Online producer-library-service Service - Service</name>
   <description>producer-library-service service as a microservice for online</description>
   <properties>
@@ -38,9 +38,19 @@
         <scope>runtime</scope>
       </dependency>
       <dependency>
-        <groupId>net.apmoller.crb.ohm.logger</groupId>
-        <artifactId>ohm-logger</artifactId>
-        <version>1.0.1</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-aop</artifactId>
+        <scope>test</scope>
+      </dependency>
+<!--      <dependency>-->
+<!--        <groupId>net.apmoller.crb.ohm.logger</groupId>-->
+<!--        <artifactId>ohm-logger</artifactId>-->
+<!--        <version>1.0.1</version>-->
+<!--      </dependency>-->
+      <dependency>
+        <groupId>io.confluent</groupId>
+        <artifactId>kafka-avro-serializer</artifactId>
+        <version>6.2.1</version>
       </dependency>
     </dependencies>
 
@@ -108,6 +118,24 @@
             <JAR_FILE>target/${artifactName}</JAR_FILE>
           </buildArgs>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.avro</groupId>
+        <artifactId>avro-maven-plugin</artifactId>
+        <version>1.8.2</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>schema</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>src/test/java/avro</sourceDirectory>
+              <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
+              <stringType>String</stringType>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
