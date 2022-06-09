@@ -64,12 +64,6 @@ steps:
       testResultsFiles: '**/surefire-reports/TEST-*.xml'
       goals: 'deploy'
 
-  - template: polaris.template.yml@PolarisTemplateRepo
-    parameters:
-      polarisScanBranch: develop
-      nexusMaven: true
-      javaVersion: '11'
-      
   - template: imports_api_build_template.yml@importsbuildtemplate
     parameters:
       SKIP_SONAR: true
