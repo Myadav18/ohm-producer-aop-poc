@@ -1,6 +1,6 @@
 version: "1"
 project:
-  name: ohm-kafkaproducer
+  name: ohm-producer-library
   branch: ${scm.git.branch}
   revision:
     name: ${scm.git.commit}
