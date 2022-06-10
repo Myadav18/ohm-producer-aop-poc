@@ -2,7 +2,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
-import org.apache.kafka.common.errors.InvalidTopicException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,61 +32,73 @@ public class ConfigValidatorTest {
     @Test
     void testInvalidTopic() {
         String producerTopic = "";
-        assertThrows(InvalidTopicException.class, () -> validator.validateInputs(producerTopic));
+        String message = "test";
+        assertThrows(TopicNameValidationException.class, () -> validator.validateInputs(producerTopic, message));
     }
 
     @Test
     void testInvalidTopicPlaceholder() {
         String producerTopic = "${";
-        assertThrows(InvalidTopicException.class, () -> validator.validateInputs(producerTopic));
+        String message = "test";
+        assertThrows(TopicNameValidationException.class, () -> validator.validateInputs(producerTopic, message));
     }
 
     @Test
     void testInvalidServerPlaceholder() {
         String producerTopic = "test";
-        assertThrows(KafkaServerNotFoundException.class, () -> validator.validateInputs(producerTopic));
+        String message = "test";
+        assertThrows(KafkaServerNotFoundException.class, () -> validator.validateInputs(producerTopic, message));
     }
 
     @Test
     void testInvalidTopicForMultipleProducerWhenInputMapEmpty() {
-        Map<String,String> topicMap = new HashMap<>();
-        assertThrows(InvalidTopicException.class, () -> validator.validateInputsForMultipleProducerFlow(topicMap));
+        Map<String, String> topicMap = new HashMap<>();
+        String message = "test";
+        assertThrows(TopicNameValidationException.class,
+                () -> validator.validateInputsForMultipleProducerFlow(topicMap, message));
     }
 
     @Test
     void testInvalidTopicForMultipleProducerWhenTargetTopicNotPresent() {
-        Map<String,String> topicMap = new HashMap<>();
+        Map<String, String> topicMap = new HashMap<>();
+        String message = "test";
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        Throwable exception = assertThrows(InvalidTopicException.class, () -> validator.validateInputsForMultipleProducerFlow(topicMap));
+        Throwable exception = assertThrows(TopicNameValidationException.class,
+                () -> validator.validateInputsForMultipleProducerFlow(topicMap, message));
         assertEquals(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG, exception.getMessage());
     }
 
     @Test
     void testInvalidTopicForMultipleProducerWhenRetryTopicNotPresent() {
-        Map<String,String> topicMap = new HashMap<>();
+        Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        Throwable exception = assertThrows(InvalidTopicException.class, () -> validator.validateInputsForMultipleProducerFlow(topicMap));
-        assertEquals(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG, exception.getMessage());
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        String message = "test";
+        var retryTopicPresent = validator.retryTopicPresent(topicMap);
+        assertEquals(true, retryTopicPresent);
     }
 
     @Test
     void testInvalidTopicForMultipleProducerWhenDltNotPresent() {
-        Map<String,String> topicMap = new HashMap<>();
+        Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        Throwable exception = assertThrows(InvalidTopicException.class, () -> validator.validateInputsForMultipleProducerFlow(topicMap));
-        assertEquals(ConfigConstants.INVALID_DLT_ERROR_MSG, exception.getMessage());
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        String message = "test";
+        var dltTopicPresent = validator.dltTopicPresent(topicMap);
+        assertEquals(true, dltTopicPresent);
     }
 
     @Test
     void testInvalidServerPlaceholderForMultipleProducer() {
-        Map<String,String> topicMap = new HashMap<>();
+        Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        assertThrows(KafkaServerNotFoundException.class, () -> validator.validateInputsForMultipleProducerFlow(topicMap));
+        String message = "test";
+        assertThrows(KafkaServerNotFoundException.class,
+                () -> validator.validateInputsForMultipleProducerFlow(topicMap, message));
     }
 
 }

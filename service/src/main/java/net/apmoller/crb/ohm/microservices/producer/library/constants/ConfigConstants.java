@@ -15,6 +15,7 @@ public class ConfigConstants {
     public static final String DEAD_LETTER_TOPIC_KEY = "dead-letter-topic";
 
     // Error messages constants
+    public static final String INVALID_PAYLOAD_ERROR_MSG = "Payload can't be Empty or null";
     public static final String INVALID_TOPIC_MAP_ERROR_MSG = "Map containing topic names cannot be null or Empty";
     public static final String INVALID_NOTIFICATION_TOPIC_ERROR_MSG = "Notification topic name cannot be null or Empty";
     public static final String INVALID_RETRY_TOPIC_ERROR_MSG = "Retry topic name cannot be null or Empty";

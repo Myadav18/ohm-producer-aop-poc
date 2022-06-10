@@ -3,12 +3,14 @@ package net.apmoller.crb.ohm.microservices.producer.library.utils;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
+import net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,12 +34,15 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(classes = {MessagePublisherUtil.class })
+@SpringBootTest(classes = { MessagePublisherUtil.class })
 @ActiveProfiles({ "test" })
-public class MessagePublisherUtilTest <T> {
+public class MessagePublisherUtilTest<T> {
 
     @MockBean
     private KafkaTemplate kafkaTemplate;
+
+    @MockBean
+    private ConfigValidator<T> configValidator;
 
     @Mock
     SendResult<String, Object> sendResult;
@@ -46,17 +51,16 @@ public class MessagePublisherUtilTest <T> {
     ListenableFuture<SendResult<String, Object>> responseFuture;
 
     @Autowired
-    private MessagePublisherUtil messagePublisherUtil;
+    private MessagePublisherUtil<T> messagePublisherUtil;
 
     @Test
-    void testSuccessfulPublishOnTopic()
-    {
+    void testSuccessfulPublishOnTopic() {
         long offset = 1L;
         int partition = 2;
         String producerTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T)"payload");
+        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) "payload");
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
                 0L, 0, 0);
@@ -73,14 +77,13 @@ public class MessagePublisherUtilTest <T> {
     }
 
     @Test
-    void testFailureOnPublishToTopic()
-    {
+    void testFailureOnPublishToTopic() {
         long offset = 1L;
         int partition = 2;
         String producerTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T)"payload");
+        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) "payload");
         Throwable ex = mock(Throwable.class);
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
@@ -91,51 +94,58 @@ public class MessagePublisherUtilTest <T> {
             listenableFutureCallback.onFailure(ex);
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        assertThrows(InternalServerException.class, () -> messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader));
+        assertThrows(InternalServerException.class,
+                () -> messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader));
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
 
     @Test
-    void testGetErrorTopicWhenTimeOutException()
-    {
-        Map<String,String> topicMap = new HashMap<>();
+    void testGetErrorTopicWhenTimeOutException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        var errorTopic = messagePublisherUtil.getErrorTopic(new TimeoutException(), topicMap);
-        assertEquals("retry", errorTopic);
+        Assertions.assertThrows(TimeoutException.class, () -> messagePublisherUtil
+                .produceMessageToRetryOrDlt(new TimeoutException(), topicMap, (T) payload, new HashMap<>()));
+
     }
 
     @Test
-    void testGetErrorTopicWhenNullPointerException()
-    {
-        Map<String,String> topicMap = new HashMap<>();
+    void testGetErrorTopicWhenNullPointerException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        var errorTopic = messagePublisherUtil.getErrorTopic(new NullPointerException(), topicMap);
-        assertEquals("dlt", errorTopic);
+        Assertions.assertThrows(NullPointerException.class, () -> messagePublisherUtil
+                .produceMessageToRetryOrDlt(new NullPointerException(), topicMap, (T) payload, new HashMap<>()));
+        // assertEquals("dlt", errorTopic);
     }
 
     @Test
-    void testGetErrorTopicWhenKafkaServerNotFoundException()
-    {
-        Map<String,String> topicMap = new HashMap<>();
+    void testGetErrorTopicWhenKafkaServerNotFoundException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        assertThrows(KafkaServerNotFoundException.class, () ->
-                messagePublisherUtil.getErrorTopic(new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG), topicMap));
+        assertThrows(KafkaServerNotFoundException.class,
+                () -> messagePublisherUtil.produceMessageToRetryOrDlt(
+                        new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG), topicMap,
+                        (T) payload, new HashMap<>()));
     }
 
     @Test
-    void testGetErrorTopicWhenInvalidTopicException()
-    {
-        Map<String,String> topicMap = new HashMap<>();
+    void testGetErrorTopicWhenInvalidTopicNameException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        assertThrows(InvalidTopicException.class, () ->
-                messagePublisherUtil.getErrorTopic(new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG), topicMap));
+        assertThrows(TopicNameValidationException.class,
+                () -> messagePublisherUtil.produceMessageToRetryOrDlt(
+                        new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG),
+                        topicMap, (T) payload, new HashMap<>()));
     }
 
 }
