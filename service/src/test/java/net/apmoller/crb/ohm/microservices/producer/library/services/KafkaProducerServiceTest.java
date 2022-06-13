@@ -105,4 +105,17 @@ public class KafkaProducerServiceTest<T> {
         verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(3)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
+
+    @Test
+    void testRetryTopic() throws IOException {
+        String payload = "test";
+        Map<String, String> topicMap = new HashMap<>();
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        doThrow(TopicNameValidationException.class).when(validator).validateInputsForMultipleProducerFlow(anyMap(),
+                (T) anyString());
+        kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>());
+        verify(validator, times(1)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
+        verify(messagePublisherUtil, times(0)).publishOnTopic(any(ProducerRecord.class), anyMap());
+    }
 }

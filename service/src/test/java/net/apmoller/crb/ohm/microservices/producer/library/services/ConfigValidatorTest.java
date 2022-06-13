@@ -2,6 +2,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -99,6 +100,37 @@ public class ConfigValidatorTest {
         String message = "test";
         assertThrows(KafkaServerNotFoundException.class,
                 () -> validator.validateInputsForMultipleProducerFlow(topicMap, message));
+    }
+
+    @Test
+    void testRetryTopicIsPresent() {
+        String retryTopic = "retryTopic";
+        assertEquals(Boolean.TRUE, validator.retryTopicIsPresent(retryTopic));
+    }
+
+    @Test
+    void testRetryTopicIsNotPresent() {
+        String retryTopic = "retryTopic";
+        assertEquals(Boolean.FALSE, validator.retryTopicIsPresent(""));
+    }
+
+    @Test
+    void testDltTopicIsPresent() {
+        String dltTopic = "dltTopic";
+        assertEquals(Boolean.TRUE, validator.dltTopicIsPresent(dltTopic));
+    }
+
+    @Test
+    void testDltTopicIsNotPresent() {
+        String dltTopic = "dltTopic";
+        assertEquals(Boolean.FALSE, validator.dltTopicIsPresent(null));
+    }
+
+    @Test
+    void testEmptyPayload() {
+        String producerTopic = "test";
+        String message = "test";
+        assertThrows(PayloadValidationException.class, () -> validator.validateInputs(producerTopic, null));
     }
 
 }

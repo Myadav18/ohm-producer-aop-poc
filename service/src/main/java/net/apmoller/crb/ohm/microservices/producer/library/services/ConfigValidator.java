@@ -78,7 +78,7 @@ public class ConfigValidator<T> {
      * @param dltTopic
      */
     public boolean dltTopicIsPresent(String dltTopic) {
-        return (!(Objects.nonNull(dltTopic)) && !(dltTopic.isEmpty()) && !((dltTopic.startsWith("${"))));
+        return ((Objects.nonNull(dltTopic)) && !(dltTopic.isEmpty()) && !((dltTopic.startsWith("${"))));
     }
 
     /**
