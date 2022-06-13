@@ -76,6 +76,8 @@ public class DefaultKafkaProducerConfig<T> {
     private boolean useLatestSchemaVersion;
     @Value("${kafka.properties.specific.avro.reader:true}")
     private boolean specificAvroReader;
+    @Value("${kafka.properties.auto.register.schemas:false}")
+    private boolean autoRegisterSchemas;
     @Value("${kafka.producer.value-serializer}")
     private String valueSerializer;
     @Value("${kafka.properties.ssl.enabled.protocols:}")
@@ -127,7 +129,7 @@ public class DefaultKafkaProducerConfig<T> {
             properties.put(AbstractKafkaSchemaSerDeConfig.BASIC_AUTH_CREDENTIALS_SOURCE, schemaRegistryAuth);
             properties.put(AbstractKafkaSchemaSerDeConfig.USER_INFO_CONFIG, schemaRegistryUserInfo);
             properties.put(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, useLatestSchemaVersion);
-            properties.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, false);
+            properties.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, autoRegisterSchemas);
             properties.put("specific.avro.reader", specificAvroReader);
             properties.put("schema.registry.ssl.protocol", schemaRegistrySslProtocol);
             properties.put("schema.sasl.mechanism", schemaSaslMechanism);
