@@ -40,7 +40,7 @@ public class DefaultKafkaProducerConfig<T> {
     private String saslMechanism;
     @Value("${kafka.producer.acks-config:all}")
     private String producerAcksConfig;
-    @Value("${kafka.producer.linger:1}")
+    @Value("${kafka.producer.linger:5}")
     private int producerLinger;
     @Value("${kafka.producer.batch-size:16384}")
     private int producerBatchSize;
@@ -88,6 +88,8 @@ public class DefaultKafkaProducerConfig<T> {
     private String sslProtocol;
     @Value("${kafka.producer.compression.type:gzip}")
     private String compressionType;
+    @Value("${kafka.producer.max.request.size:15000000}")
+    private int maxRequestSize;
 
     @Bean
     public ProducerFactory<String, T> producerFactory() {
@@ -103,6 +105,7 @@ public class DefaultKafkaProducerConfig<T> {
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializer);
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
+        properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, maxRequestSize);
         addSchemaRegistryProperties(properties);
         addSecurityProperties(properties, saslMechanism, securityProtocol, loginModule);
         addTruststoreProperties(properties);

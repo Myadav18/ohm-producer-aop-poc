@@ -16,7 +16,6 @@
     <artifactName>producer-library-service</artifactName>
     <com.spotify.version>1.4.9</com.spotify.version>
     <sonar.coverage.exclusions>
-      **/net/apmoller/crb/ohm/microservices/producer/library/repositories/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.java,
       **/net/apmoller/crb/ohm/microservices/producer/library/config/DefaultKafkaProducerConfig.java,
       **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
@@ -96,6 +95,12 @@
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>0.8.4</version>
         <configuration>
+          <excludes>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/models/*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/config/DefaultKafkaProducerConfig.*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/constants/*</exclude>
+          </excludes>
           <destFile>${basedir}/target/site/jacoco/jacoco.exec</destFile>
           <dataFile>${basedir}/target/site/jacoco/jacoco.exec</dataFile>
         </configuration>
