@@ -18,8 +18,10 @@
     <sonar.coverage.exclusions>
       **/net/apmoller/crb/ohm/microservices/producer/library/repositories/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.java,
+      **/net/apmoller/crb/ohm/microservices/producer/library/config/DefaultKafkaProducerConfig.java,
       **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
-      **/net/apmoller/crb/ohm/microservices/producer/library/domains/*
+      **/net/apmoller/crb/ohm/microservices/producer/library/domains/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/constants/*
     </sonar.coverage.exclusions>
     </properties>
     <dependencies>
