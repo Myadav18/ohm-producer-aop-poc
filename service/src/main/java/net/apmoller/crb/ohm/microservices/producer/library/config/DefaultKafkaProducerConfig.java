@@ -86,6 +86,8 @@ public class DefaultKafkaProducerConfig<T> {
     private String sslAlgorithm;
     @Value("${kafka.properties.ssl.protocol:TLS}")
     private String sslProtocol;
+    @Value("${kafka.producer.compression.type:gzip}")
+    private String compressionType;
 
     @Bean
     public ProducerFactory<String, T> producerFactory() {
@@ -100,8 +102,9 @@ public class DefaultKafkaProducerConfig<T> {
         properties.put(ProducerConfig.ACKS_CONFIG, producerAcksConfig);
         properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializer);
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
+        properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
         addSchemaRegistryProperties(properties);
-        addSaslProperties(properties, saslMechanism, securityProtocol, loginModule);
+        addSecurityProperties(properties, saslMechanism, securityProtocol, loginModule);
         addTruststoreProperties(properties);
         DefaultKafkaProducerFactory<String, T> producerFactory = new DefaultKafkaProducerFactory<>(properties);
         producerFactory.addListener(new MicrometerProducerListener<>(Metrics.globalRegistry,
@@ -115,7 +118,7 @@ public class DefaultKafkaProducerConfig<T> {
         return new KafkaTemplate<>(producerFactory());
     }
 
-    private void addSaslProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol,
+    private void addSecurityProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol,
             String loginModule) {
         log.info("Creating SASL Properties, saslMechanism:{}, securityProtocol:{}", saslMechanism, securityProtocol);
         properties.put("security.protocol", securityProtocol);
