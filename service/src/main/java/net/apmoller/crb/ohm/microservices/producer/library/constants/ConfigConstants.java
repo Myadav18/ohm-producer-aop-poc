@@ -13,6 +13,7 @@ public class ConfigConstants {
     public static final String NOTIFICATION_TOPIC_KEY = "notification-topic";
     public static final String RETRY_TOPIC_KEY = "retry-topic";
     public static final String DEAD_LETTER_TOPIC_KEY = "dead-letter-topic";
+    public static final String SCRAM_SASL_MECHANISM = "SCRAM-SHA-256";
 
     // Error messages constants
     public static final String INVALID_PAYLOAD_ERROR_MSG = "Payload can't be Empty or null";
