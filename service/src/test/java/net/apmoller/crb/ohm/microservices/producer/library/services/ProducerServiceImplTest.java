@@ -6,9 +6,6 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServe
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.InvalidTopicException;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.poi.ss.formula.functions.T;
@@ -20,19 +17,14 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.TransactionTimedOutException;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
 @Slf4j
@@ -182,11 +174,8 @@ public class ProducerServiceImplTest {
         String dltTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        try {
-            producerServiceImpl.publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader);
-        } catch (TopicNameValidationException | IOException e) {
-            log.info("Message can't be published to kafka topic topic");
-        }
+        assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
+                .publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader));
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
 
@@ -196,11 +185,8 @@ public class ProducerServiceImplTest {
         String deadLetterTopic = "";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        try {
-            producerServiceImpl.publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader);
-        } catch (TopicNameValidationException | IOException e) {
-            log.info("Message can't be published to kafka topic topic");
-        }
+        assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
+                .publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader));
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
 

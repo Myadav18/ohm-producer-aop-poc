@@ -101,7 +101,7 @@ public class MessagePublisherUtilTest<T> {
     }
 
     @Test
-    void testGetErrorTopicWhenTimeOutException() {
+    void testExceptionWhilePostingToRetry() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
@@ -113,7 +113,7 @@ public class MessagePublisherUtilTest<T> {
     }
 
     @Test
-    void testGetErrorTopicWhenNullPointerException() {
+    void testExceptionWhilePostingToDlt() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
@@ -121,11 +121,10 @@ public class MessagePublisherUtilTest<T> {
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
         Assertions.assertThrows(NullPointerException.class, () -> messagePublisherUtil
                 .produceMessageToRetryOrDlt(new NullPointerException(), topicMap, (T) payload, new HashMap<>()));
-        // assertEquals("dlt", errorTopic);
     }
 
     @Test
-    void testGetErrorTopicWhenKafkaServerNotFoundException() {
+    void testKafkaServerNotFoundException() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
@@ -138,7 +137,7 @@ public class MessagePublisherUtilTest<T> {
     }
 
     @Test
-    void testGetErrorTopicWhenInvalidTopicNameException() {
+    void testInvalidTopicNameExceptionWhilePostingToMainTopic() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
