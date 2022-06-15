@@ -1,6 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
+import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
@@ -39,6 +40,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
      * @throws KafkaServerNotFoundException
      */
     @Override
+    @LogException
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
@@ -66,6 +68,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
      * @throws InternalServerException
      * @throws KafkaServerNotFoundException
      */
+    @LogException
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, Map<String, String> topics, T message,
             Map<String, Object> kafkaHeader) throws InternalServerException, TopicNameValidationException,

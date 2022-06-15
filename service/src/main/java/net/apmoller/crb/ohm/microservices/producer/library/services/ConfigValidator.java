@@ -27,16 +27,10 @@ public class ConfigValidator<T> {
      * @param producerTopic
      */
     public void validateInputs(String producerTopic, T message) {
-
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
-        // var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
-        // var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
-
         payloadValidation(message);
         notificationTopicValidation(producerTopic);
         bootstrapServerValidation(bootstrapServer);
-        // retryTopicValidation(retryTopic);
-        // dltTopicValidation(dltTopic);
     }
 
     /**
@@ -109,10 +103,6 @@ public class ConfigValidator<T> {
         } else {
             if (notificationTopicNotPresent(topics))
                 throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
-            // if (retryTopicNotPresent(topics))
-            // throw new TopicNameValidationException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
-            // if (dltNotPresent(topics))
-            // throw new TopicNameValidationException(ConfigConstants.INVALID_DLT_ERROR_MSG);
         }
 
         if (bootstrapServer.isEmpty() || bootstrapServer.startsWith("${")) {
@@ -127,7 +117,8 @@ public class ConfigValidator<T> {
     private boolean notificationTopicNotPresent(Map<String, String> topics) {
         return !topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
                 || (topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
-                        && Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)));
+                        && ((Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)))
+                                || ((topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)).isEmpty())));
     }
 
     /**
@@ -136,7 +127,8 @@ public class ConfigValidator<T> {
      */
     public boolean retryTopicPresent(Map<String, String> topics) {
         return topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
-                && (Objects.nonNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)));
+                && (Objects.nonNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)))
+                && !((topics.get(ConfigConstants.RETRY_TOPIC_KEY)).isEmpty());
     }
 
     /**
@@ -144,8 +136,9 @@ public class ConfigValidator<T> {
      * @param topics
      */
     public boolean dltTopicPresent(Map<String, String> topics) {
-        return  (topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY)
-                        && (Objects.nonNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY))));
+        return (topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY)
+                && (Objects.nonNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY))))
+                && !((topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY)).isEmpty());
 
     }
 }

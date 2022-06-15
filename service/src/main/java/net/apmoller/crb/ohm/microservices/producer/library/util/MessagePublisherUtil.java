@@ -78,7 +78,7 @@ public class MessagePublisherUtil<T> {
                 publishMessageToRetryTopic(message, kafkaHeader, e, topics);
             } else if (configValidator.dltTopicPresent(topics)) {
                 var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
-                publishMessageToDltTopic(message, kafkaHeader, dltTopic, e);
+                publishMessageToDltTopic(message, kafkaHeader, dltTopic);
             } else
                 throw e;
         } catch (Exception ex) {
@@ -131,7 +131,7 @@ public class MessagePublisherUtil<T> {
         } catch (Exception ex) {
             if (configValidator.dltTopicPresent(topics)) {
                 var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
-                publishMessageToDltTopic(message, kafkaHeader, dltTopic, e);
+                publishMessageToDltTopic(message, kafkaHeader, dltTopic);
             } else
                 throw e;
         }
@@ -162,10 +162,8 @@ public class MessagePublisherUtil<T> {
      * @param message
      * @param kafkaHeader
      * @param dltTopic
-     * @param e
      */
-    public void publishMessageToDltTopic(T message, Map<String, Object> kafkaHeader, String dltTopic,
-            RuntimeException e) {
+    public void publishMessageToDltTopic(T message, Map<String, Object> kafkaHeader, String dltTopic) {
         try {
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
             publishOnTopic(producerRecord, kafkaHeader);
