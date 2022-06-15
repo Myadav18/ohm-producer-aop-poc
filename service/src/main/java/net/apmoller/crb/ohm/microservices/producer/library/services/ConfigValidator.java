@@ -4,7 +4,8 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
-import org.apache.kafka.common.errors.InvalidTopicException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -15,7 +16,7 @@ import java.util.Objects;
 @Slf4j
 @Component
 @NoArgsConstructor
-public class ConfigValidator {
+public class ConfigValidator<T> {
 
     @Autowired
     private ApplicationContext context;
@@ -25,16 +26,22 @@ public class ConfigValidator {
      *
      * @param producerTopic
      */
-    public void validateInputs(String producerTopic) {
-
+    public void validateInputs(String producerTopic, T message) {
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
-        var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
-        var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
-
+        payloadValidation(message);
         notificationTopicValidation(producerTopic);
         bootstrapServerValidation(bootstrapServer);
-        retryTopicValidation(retryTopic);
-        dltTopicValidation(dltTopic);
+    }
+
+    /**
+     * Method checks if payload is not null.
+     *
+     * @param message
+     */
+    private void payloadValidation(T message) {
+        if (Objects.isNull(message)) {
+            throw new PayloadValidationException(ConfigConstants.INVALID_PAYLOAD_ERROR_MSG);
+        }
     }
 
     /**
@@ -44,9 +51,9 @@ public class ConfigValidator {
      */
     private void notificationTopicValidation(String producerTopic) {
         if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
+            throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         } else if ((producerTopic.startsWith("${"))) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_PLACEHOLDER);
+            throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_PLACEHOLDER);
         }
     }
 
@@ -55,12 +62,8 @@ public class ConfigValidator {
      *
      * @param retryTopic
      */
-    private void retryTopicValidation(String retryTopic) {
-        if (Objects.isNull(retryTopic) || retryTopic.isEmpty()) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
-        } else if ((retryTopic.startsWith("${"))) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_PLACEHOLDER);
-        }
+    public boolean retryTopicIsPresent(String retryTopic) {
+        return ((Objects.nonNull(retryTopic)) && !(retryTopic.isEmpty()) && !((retryTopic.startsWith("${"))));
     }
 
     /**
@@ -68,12 +71,8 @@ public class ConfigValidator {
      *
      * @param dltTopic
      */
-    private void dltTopicValidation(String dltTopic) {
-        if ((Objects.isNull(dltTopic) || dltTopic.isEmpty())) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_ERROR_MSG);
-        } else if (dltTopic.startsWith("${")) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_DLT_TOPIC_PLACEHOLDER);
-        }
+    public boolean dltTopicIsPresent(String dltTopic) {
+        return ((Objects.nonNull(dltTopic)) && !(dltTopic.isEmpty()) && !((dltTopic.startsWith("${"))));
     }
 
     /**
@@ -93,20 +92,17 @@ public class ConfigValidator {
      * Method to validate topic and bootstrap server before posting message to kafka topic.
      * @param topics
      */
-    public void validateInputsForMultipleProducerFlow(Map<String, String> topics) {
+    public void validateInputsForMultipleProducerFlow(Map<String, String> topics, T message) {
 
         log.info("Topics map passed in input: {}", topics);
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
         log.info("bootstrapServer from application context: {}", bootstrapServer);
+        payloadValidation(message);
         if (Objects.isNull(topics) || topics.isEmpty()) {
-            throw new InvalidTopicException(ConfigConstants.INVALID_TOPIC_MAP_ERROR_MSG);
+            throw new TopicNameValidationException(ConfigConstants.INVALID_TOPIC_MAP_ERROR_MSG);
         } else {
             if (notificationTopicNotPresent(topics))
-                throw new InvalidTopicException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
-            if (retryTopicNotPresent(topics))
-                throw new InvalidTopicException(ConfigConstants.INVALID_RETRY_TOPIC_ERROR_MSG);
-            if (dltNotPresent(topics))
-                throw new InvalidTopicException(ConfigConstants.INVALID_DLT_ERROR_MSG);
+                throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         }
 
         if (bootstrapServer.isEmpty() || bootstrapServer.startsWith("${")) {
@@ -120,25 +116,29 @@ public class ConfigValidator {
      */
     private boolean notificationTopicNotPresent(Map<String, String> topics) {
         return !topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
-                || (topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)));
+                || (topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
+                        && ((Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)))
+                                || ((topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)).isEmpty())));
     }
 
     /**
      * Method checks if input map contains retry topic name
      * @param topics
      */
-    private boolean retryTopicNotPresent(Map<String, String> topics) {
-        return !topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
-                || (topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)));
+    public boolean retryTopicPresent(Map<String, String> topics) {
+        return topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
+                && (Objects.nonNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)))
+                && !((topics.get(ConfigConstants.RETRY_TOPIC_KEY)).isEmpty());
     }
 
     /**
      * Method checks if input map contains dead letter topic name
      * @param topics
      */
-    private boolean dltNotPresent(Map<String, String> topics) {
-        return !topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY)
-                || (topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY) && Objects.isNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY)));
+    public boolean dltTopicPresent(Map<String, String> topics) {
+        return (topics.containsKey(ConfigConstants.DEAD_LETTER_TOPIC_KEY)
+                && (Objects.nonNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY))))
+                && !((topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY)).isEmpty());
 
     }
 }
