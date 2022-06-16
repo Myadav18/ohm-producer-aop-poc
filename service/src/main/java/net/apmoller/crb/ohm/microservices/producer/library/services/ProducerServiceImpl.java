@@ -123,7 +123,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                 messagePublisherUtil.publishToDltTopic(message, kafkaHeader, dltTopic, e);
             }
         } catch (Exception ex) {
-            log.info("Exception Occured while Posting to Retry or DLT Topic", ex);
+            log.error("Exception Occured while Posting to Retry or DLT Topic", ex);
             throw ex;
         }
     }
