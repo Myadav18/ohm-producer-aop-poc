@@ -12,14 +12,10 @@ import org.apache.avro.io.DatumWriter;
 import org.apache.avro.reflect.ReflectData;
 import org.apache.avro.reflect.ReflectDatumWriter;
 import org.apache.kafka.common.header.Headers;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Objects;
 
 @Slf4j
@@ -62,8 +58,6 @@ public class CustomSerializer extends KafkaAvroSerializer {
                     throw e;
                 }
             }
-            log.info("Compressed payload size: {} bytes",
-                    compressedPayload.toString().getBytes(StandardCharsets.UTF_8).length);
             long finishedAt = System.currentTimeMillis();
             log.info("Finished method X at time: " + finishedAt + " after: " + (finishedAt - startedAt)
                     + " milliseconds");
