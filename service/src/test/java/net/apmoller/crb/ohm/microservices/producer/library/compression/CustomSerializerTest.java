@@ -64,12 +64,6 @@ public class CustomSerializerTest {
     }
 
     @Test
-    public void testEmptyMessage() throws IOException {
-        String message = "";
-        assertThrows(Exception.class, () -> customSerializer.serialize(null, null, message));
-    }
-
-    @Test
     public void testAvroMessageException() {
         List<String> downstream = new ArrayList<>();
         downstream.add("documentservice");

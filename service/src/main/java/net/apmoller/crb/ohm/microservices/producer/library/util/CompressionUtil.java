@@ -1,9 +1,12 @@
 package net.apmoller.crb.ohm.microservices.producer.library.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.zip.DeflaterOutputStream;
 
@@ -12,6 +15,7 @@ import java.util.zip.DeflaterOutputStream;
  */
 @Slf4j
 @Component
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CompressionUtil {
 
     /**
@@ -49,7 +53,7 @@ public class CompressionUtil {
             log.error("Payload can't be null or Empty");
             throw e;
         }
-        return null;
+        return text.getBytes(StandardCharsets.UTF_8);
     }
 
     /**
