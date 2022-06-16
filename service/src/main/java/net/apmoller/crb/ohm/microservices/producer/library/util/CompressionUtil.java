@@ -15,8 +15,9 @@ import java.util.zip.DeflaterOutputStream;
  */
 @Slf4j
 @Component
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CompressionUtil {
+    private CompressionUtil() {
+    }
 
     /**
      * Method will Encode the Compress Message
