@@ -16,6 +16,10 @@ import java.util.zip.DeflaterOutputStream;
 @Slf4j
 @Component
 public class CompressionUtil {
+
+    /**
+     * Private Constructor
+     */
     private CompressionUtil() {
     }
 
