@@ -1,7 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -75,14 +74,12 @@ public class ProducerServiceImplTest {
     }
 
     @Test
-    void testMessageSentToTopicFailure() throws InternalServerException {
+    void testMessageSentToTopicFailure() {
         String message = "test Message";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        doThrow(InternalServerException.class).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
-                anyMap());
-        assertThrows(InternalServerException.class,
-                () -> producerServiceImpl.produceMessages(message, new HashMap<>()));
+        doThrow(RuntimeException.class).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
+        assertThrows(RuntimeException.class, () -> producerServiceImpl.produceMessages(message, new HashMap<>()));
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
@@ -152,7 +149,7 @@ public class ProducerServiceImplTest {
     }
 
     @Test
-    void testMessageSentToRetryTopicFailure() throws InternalServerException, IOException {
+    void testMessageSentToRetryTopicFailure() {
         String message = "test Message";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
@@ -169,9 +166,6 @@ public class ProducerServiceImplTest {
     @Test
     void testDeadLetterTopicNotFound() {
         String message = "test Message";
-        String deadLetterTopic = "test";
-        String retryTopic = "test";
-        String dltTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
@@ -198,7 +192,7 @@ public class ProducerServiceImplTest {
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaServerNotFoundException, message, kafkaHeader);
-        } catch (KafkaServerNotFoundException | IOException e) {
+        } catch (KafkaServerNotFoundException e) {
             log.info("Invalid Kafka bootStrap Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());

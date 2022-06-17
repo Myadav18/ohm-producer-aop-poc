@@ -3,7 +3,6 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
@@ -17,7 +16,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
@@ -32,11 +30,16 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     /**
      * Method is used to Send Message to kafka topic after validations.
-     * @param topics Map containing target, retry and dead letter topic names
-     * @param message payload
-     * @param kafkaHeader Map containing headers to be posted on topic
+     * 
+     * @param topics
+     *            Map containing target, retry and dead letter topic names
+     * @param message
+     *            payload
+     * @param kafkaHeader
+     *            Map containing headers to be posted on topic
+     * 
      * @throws TopicNameValidationException
-     * @throws InternalServerException
+     * @throws PayloadValidationException
      * @throws KafkaServerNotFoundException
      */
     @Override
@@ -44,8 +47,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, InternalServerException,
-            PayloadValidationException, IOException {
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
         long startedAt = System.currentTimeMillis();
         try {
             configValidator.validateInputsForMultipleProducerFlow(topics, message);
@@ -61,18 +63,20 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     /**
      * Method Sends the Message to Retry Or DLT Topic.
+     * 
      * @param e
      * @param message
      * @param kafkaHeader
+     * 
      * @throws TopicNameValidationException
-     * @throws InternalServerException
+     * @throws PayloadValidationException
      * @throws KafkaServerNotFoundException
      */
     @LogException
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, Map<String, String> topics, T message,
-            Map<String, Object> kafkaHeader) throws InternalServerException, TopicNameValidationException,
-            KafkaServerNotFoundException, PayloadValidationException, IOException {
+            Map<String, Object> kafkaHeader)
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
         long startedAt = System.currentTimeMillis();
         try {
             messagePublisherUtil.produceMessageToRetryOrDlt(e, topics, message, kafkaHeader);
@@ -80,7 +84,8 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             log.error("Exception while pushing message to error topic ", ex);
             throw ex;
         }
-        log.info("Time taken to execute publishMessageOnRetryOrDltTopic: {} milliseconds", (System.currentTimeMillis() - startedAt));
+        log.info("Time taken to execute publishMessageOnRetryOrDltTopic: {} milliseconds",
+                (System.currentTimeMillis() - startedAt));
     }
 
 }
