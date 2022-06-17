@@ -90,6 +90,8 @@ public class DefaultKafkaProducerConfig<T> {
     private String compressionType;
     @Value("${kafka.producer.max.request.size:15000000}")
     private int maxRequestSize;
+    @Value("${kafka.properties.saslRequired:true}")
+    private String saslRequired;
 
     @Bean
     public ProducerFactory<String, T> producerFactory() {
@@ -123,10 +125,13 @@ public class DefaultKafkaProducerConfig<T> {
 
     private void addSecurityProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol,
             String loginModule) {
-        log.info("Creating SASL Properties, saslMechanism:{}, securityProtocol:{}", saslMechanism, securityProtocol);
-        properties.put("security.protocol", securityProtocol);
-        properties.put("sasl.mechanism", saslMechanism);
-        properties.put("sasl.jaas.config", loginModule);
+        log.info("Creating SASL Properties, saslMechanism:{}, securityProtocol:{}, saslRequired:{}", saslMechanism,
+                securityProtocol, saslRequired);
+        if (Boolean.parseBoolean(saslRequired)) {
+            properties.put("security.protocol", securityProtocol);
+            properties.put("sasl.mechanism", saslMechanism);
+            properties.put("sasl.jaas.config", loginModule);
+        }
     }
 
     private void addSchemaRegistryProperties(Map<String, Object> properties) {
