@@ -82,6 +82,7 @@ public class MessagePublisherUtil<T> {
             } else
                 throw e;
         } catch (Exception ex) {
+            log.error("Exception Occured :", ex);
             throw ex;
         }
     }

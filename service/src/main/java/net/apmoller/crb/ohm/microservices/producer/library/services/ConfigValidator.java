@@ -63,7 +63,7 @@ public class ConfigValidator<T> {
      * @param retryTopic
      */
     public boolean retryTopicIsPresent(String retryTopic) {
-        return ((Objects.nonNull(retryTopic)) && !(retryTopic.isEmpty()) && !((retryTopic.startsWith("${"))));
+        return ((Objects.nonNull(retryTopic)) && !(retryTopic.isEmpty()) && !(retryTopic.startsWith("${")));
     }
 
     /**
@@ -72,7 +72,7 @@ public class ConfigValidator<T> {
      * @param dltTopic
      */
     public boolean dltTopicIsPresent(String dltTopic) {
-        return ((Objects.nonNull(dltTopic)) && !(dltTopic.isEmpty()) && !((dltTopic.startsWith("${"))));
+        return ((Objects.nonNull(dltTopic)) && !(dltTopic.isEmpty()) && !(dltTopic.startsWith("${")));
     }
 
     /**
