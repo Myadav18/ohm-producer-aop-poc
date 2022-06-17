@@ -69,3 +69,4 @@ steps:
       SKIP_SONAR: false
       NEXUS_MAERSK_DEV_NET_CONNECTION: NexusMaerskDevNetRW-OH-Modernization
       SONAR_QUBE_CONNECTION: ado_sonar_maerskdev_net_token-OH-Modernization
+      ENABLED_CACHE: false
