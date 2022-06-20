@@ -1,13 +1,14 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
+import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -30,10 +32,13 @@ import static org.mockito.Mockito.*;
 @Slf4j
 @SpringBootTest(classes = { ProducerServiceImpl.class })
 @ActiveProfiles({ "test" })
-public class ProducerServiceImplTest {
+public class ProducerServiceImplTest<T> {
 
     @MockBean
     private ApplicationContext context;
+
+    @MockBean
+    private Environment environment;
 
     @MockBean
     private ConfigValidator<T> validate;
@@ -75,14 +80,12 @@ public class ProducerServiceImplTest {
     }
 
     @Test
-    void testMessageSentToTopicFailure() throws InternalServerException {
+    void testMessageSentToTopicFailure() {
         String message = "test Message";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        doThrow(InternalServerException.class).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
-                anyMap());
-        assertThrows(InternalServerException.class,
-                () -> producerServiceImpl.produceMessages(message, new HashMap<>()));
+        doThrow(RuntimeException.class).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
+        assertThrows(RuntimeException.class, () -> producerServiceImpl.produceMessages(message, new HashMap<>()));
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
@@ -152,7 +155,7 @@ public class ProducerServiceImplTest {
     }
 
     @Test
-    void testMessageSentToRetryTopicFailure() throws InternalServerException, IOException {
+    void testMessageSentToRetryTopicFailure() {
         String message = "test Message";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
@@ -169,9 +172,6 @@ public class ProducerServiceImplTest {
     @Test
     void testDeadLetterTopicNotFound() {
         String message = "test Message";
-        String deadLetterTopic = "test";
-        String retryTopic = "test";
-        String dltTopic = "test";
         Map<String, Object> kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
@@ -198,9 +198,51 @@ public class ProducerServiceImplTest {
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         try {
             producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaServerNotFoundException, message, kafkaHeader);
-        } catch (KafkaServerNotFoundException | IOException e) {
+        } catch (KafkaServerNotFoundException e) {
             log.info("Invalid Kafka bootStrap Server");
         }
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
+    }
+
+    @Test
+    void testTopicAuthorizationException() {
+        String message = "test Message";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
+                new TopicAuthorizationException("test"));
+        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
+        assertThrows(org.apache.kafka.common.KafkaException.class,
+                () -> producerServiceImpl.produceMessages(message, kafkaHeader));
+    }
+
+    @Test
+    void testPostingOnRetryTopicWhenTopicAuthorizationException() {
+        String message = "test Message";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        when(environment.resolvePlaceholders(ConfigConstants.RETRY_TOPIC))
+                .thenReturn("${kafka.notification.retry-topic}");
+        when(context.getEnvironment()).thenReturn(environment);
+        org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
+                new TopicAuthorizationException("test"));
+        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, message, kafkaHeader);
+        verify(messagePublisherUtil, times(1)).publishToRetryTopic(any(), anyMap(), any(), any(), any());
+    }
+
+    @Test
+    void testPostingOnDLTWhenTopicAuthorizationException() {
+        String message = "test Message";
+        Map<String, Object> kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        when(environment.resolvePlaceholders(ConfigConstants.DLT))
+                .thenReturn("${kafka.notification.dead-letter-topic}");
+        when(context.getEnvironment()).thenReturn(environment);
+        org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
+                new TopicAuthorizationException("test"));
+        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.FALSE);
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, message, kafkaHeader);
+        verify(messagePublisherUtil, times(1)).publishToDltTopic(any(), anyMap(), any(), any());
     }
 }

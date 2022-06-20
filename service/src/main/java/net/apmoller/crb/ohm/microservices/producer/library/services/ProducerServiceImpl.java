@@ -3,13 +3,13 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,6 +21,7 @@ import org.springframework.transaction.TransactionTimedOutException;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -45,15 +46,15 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      * @param kafkaHeader
      * 
      * @throws TopicNameValidationException
-     * @throws InternalServerException
+     * @throws PayloadValidationException
      * @throws KafkaServerNotFoundException
      */
     @Override
     @LogException
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
-    public void produceMessages(T message, Map<String, Object> kafkaHeader) throws TopicNameValidationException,
-            InternalServerException, KafkaServerNotFoundException, IOException, PayloadValidationException {
+    public void produceMessages(T message, Map<String, Object> kafkaHeader)
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
         long startedAt = System.currentTimeMillis();
         try {
             var producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
@@ -77,14 +78,13 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      * @param kafkaHeader
      *
      * @throws TopicNameValidationException
-     * @throws InternalServerException
+     * @throws PayloadValidationException
      * @throws TransactionTimedOutException
      */
     @LogException
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, InternalServerException, IOException,
-            PayloadValidationException {
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
         long startedAt = System.currentTimeMillis();
         try {
             produceToRetryOrDlt(e, message, kafkaHeader);
@@ -116,14 +116,15 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
         var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
         try {
-            if (configValidator.retryTopicIsPresent(retryTopic)
-                    && ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException))) {
+            if (configValidator.retryTopicIsPresent(retryTopic) && ((e instanceof TransactionTimedOutException)
+                    || (e instanceof TimeoutException)
+                    || (Objects.nonNull(e.getCause()) && (e.getCause() instanceof TopicAuthorizationException)))) {
                 messagePublisherUtil.publishToRetryTopic(message, kafkaHeader, retryTopic, dltTopic, e);
             } else {
                 messagePublisherUtil.publishToDltTopic(message, kafkaHeader, dltTopic, e);
             }
         } catch (Exception ex) {
-            log.error("Exception Occured while Posting to Retry or DLT Topic", ex);
+            log.error("Exception Occurred while Posting to Retry or DLT Topic", ex);
             throw ex;
         }
     }

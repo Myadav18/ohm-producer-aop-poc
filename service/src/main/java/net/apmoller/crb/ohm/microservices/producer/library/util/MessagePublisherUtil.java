@@ -1,14 +1,15 @@
 package net.apmoller.crb.ohm.microservices.producer.library.util;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.InternalServerException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -21,6 +22,7 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -34,22 +36,26 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method sends message to kafka and returns the Success or Failure case.
+     * 
      * @param producerRecord
-     * @throws InternalServerException
      */
-    public void publishOnTopic(ProducerRecord<String, T> producerRecord, Map<String, Object> kafkaHeader)
-            throws InternalServerException {
+    public void publishOnTopic(ProducerRecord<String, T> producerRecord, Map<String, Object> kafkaHeader) {
         try {
             addHeaders(producerRecord.headers(), kafkaHeader);
             ListenableFuture<SendResult<String, T>> future = kafkaTemplate.send(producerRecord);
             future.addCallback(new ListenableFutureCallback<>() {
-                @Override public void onSuccess(SendResult<String, T> result) {
-                    log.info("Sent message=[{}] with offset=[{}]", producerRecord.value(), result.getRecordMetadata().offset());
+                @Override
+                public void onSuccess(SendResult<String, T> result) {
+                    log.info("Sent message to kafka topic:[{}] with offset=[{}]", producerRecord.topic(),
+                            result.getRecordMetadata().offset());
                 }
 
-                @Override public void onFailure(Throwable ex) {
-                    log.error("Unable to send message=[{}] due to : {}", producerRecord.value(), ex);
-                    throw new InternalServerException("unable to push message to kafka", ex); }
+                @SneakyThrows
+                @Override
+                public void onFailure(Throwable ex) {
+                    log.error("Unable to send message to kafka topic:[{}] due to : {}", producerRecord.topic(), ex);
+                    throw ex;
+                }
             });
         } catch (Exception ex) {
             log.error("Exception occurred while pushing message ", ex);
@@ -59,8 +65,12 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method return retry topic/DLT name.
-     * @param e runtime exception from the main method
-     * @param topics map containing topic names from input
+     * 
+     * @param e
+     *            runtime exception from the main method
+     * @param topics
+     *            map containing topic names from input
+     * 
      * @throws KafkaServerNotFoundException
      * @throws TopicNameValidationException
      */
@@ -73,8 +83,9 @@ public class MessagePublisherUtil<T> {
             throw e;
         }
         try {
-            if (configValidator.retryTopicPresent(topics)
-                    && ((e instanceof TransactionTimedOutException) || (e instanceof TimeoutException))) {
+            if (configValidator.retryTopicPresent(topics) && ((e instanceof TransactionTimedOutException)
+                    || (e instanceof TimeoutException)
+                    || (Objects.nonNull(e.getCause()) && (e.getCause() instanceof TopicAuthorizationException)))) {
                 publishMessageToRetryTopic(message, kafkaHeader, e, topics);
             } else if (configValidator.dltTopicPresent(topics)) {
                 var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
@@ -89,6 +100,7 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method adds headers to the producerRecord.
+     * 
      * @param headers
      * @param kafkaHeader
      */
