@@ -7,9 +7,11 @@ import net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValida
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -225,8 +227,6 @@ public class MessagePublisherUtilTest<T> {
         String producerTopic = "test";
         long offset = 1L;
         int partition = 2;
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
         ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) "payload");
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
@@ -335,6 +335,89 @@ public class MessagePublisherUtilTest<T> {
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RecordTooLargeException.class);
         assertThrows(RecordTooLargeException.class,
                 () -> messagePublisherUtil.publishToDltTopic((T) payload, null, "dltTestTopic", tte));
+    }
+
+    @Test
+    void testPostingOnRetryWhenTopicAuthorizationException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
+        long offset = 1L;
+        int partition = 2;
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
+        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
+        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
+        RecordMetadata recordMetadata = new RecordMetadata(
+                new TopicPartition(topicMap.get(ConfigConstants.RETRY_TOPIC_KEY), partition), offset, 0L, 0L, 0L, 0, 0);
+        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
+        doAnswer(invocationOnMock -> {
+            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
+            listenableFutureCallback.onSuccess(sendResult);
+            assertEquals(sendResult.getRecordMetadata().offset(), offset);
+            assertEquals(sendResult.getRecordMetadata().partition(), partition);
+            return null;
+        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
+        messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException), topicMap,
+                (T) payload, null);
+        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+    }
+
+    @Test
+    void testPostingOnDLTWhenTopicAuthorizationException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
+        long offset = 1L;
+        int partition = 2;
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
+        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
+        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
+        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
+        RecordMetadata recordMetadata = new RecordMetadata(
+                new TopicPartition(topicMap.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY), partition), offset, 0L, 0L, 0L,
+                0, 0);
+        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
+        doAnswer(invocationOnMock -> {
+            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
+            listenableFutureCallback.onSuccess(sendResult);
+            assertEquals(sendResult.getRecordMetadata().offset(), offset);
+            assertEquals(sendResult.getRecordMetadata().partition(), partition);
+            return null;
+        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
+        messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException), topicMap,
+                (T) payload, null);
+        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+    }
+
+    @Test
+    void testExceptionPostingOnDLTWhenTopicAuthorizationException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
+        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
+        when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RuntimeException.class);
+        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
+        assertThrows(RuntimeException.class,
+                () -> messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException),
+                        topicMap, (T) payload, null));
+        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+    }
+
+    @Test
+    void testFailurePostingToTopicWhenTopicAuthorizationException() {
+        Map<String, String> topicMap = new HashMap<>();
+        String payload = "test";
+        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
+        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
+        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
+        assertThrows(KafkaException.class,
+                () -> messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException),
+                        topicMap, (T) payload, null));
+        verify(kafkaTemplate, times(0)).send(any(ProducerRecord.class));
     }
 
 }
