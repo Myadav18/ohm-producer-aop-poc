@@ -34,7 +34,7 @@ public class DefaultKafkaProducerConfig<T> {
 
     @Value("${kafka.bootstrapserver}")
     private String bootstrapServers;
-    @Value("${kafka.producer.login-module:org.apache.kafka.common.security.plain.PlainLoginModule}")
+    @Value("${kafka.producer.login-module:}")
     private String loginModule;
     @Value("${kafka.properties.sasl.mechanism:PLAIN}")
     private String saslMechanism;
@@ -142,9 +142,9 @@ public class DefaultKafkaProducerConfig<T> {
             properties.put(AbstractKafkaSchemaSerDeConfig.USE_LATEST_VERSION, useLatestSchemaVersion);
             properties.put(AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS, autoRegisterSchemas);
             properties.put("specific.avro.reader", specificAvroReader);
-            properties.put("schema.registry.ssl.protocol", schemaRegistrySslProtocol);
-            properties.put("schema.sasl.mechanism", schemaSaslMechanism);
             if (ConfigConstants.SCRAM_SASL_MECHANISM.equalsIgnoreCase(schemaSaslMechanism)) {
+                properties.put("schema.registry.ssl.protocol", schemaRegistrySslProtocol);
+                properties.put("schema.sasl.mechanism", schemaSaslMechanism);
                 properties.put("schema.registry.ssl.truststore.location", truststoreLocation);
                 properties.put("schema.registry.ssl.truststore.password", truststorePassword);
                 properties.put("schema.registry.ssl.keystore.location", keystoreLocation);
