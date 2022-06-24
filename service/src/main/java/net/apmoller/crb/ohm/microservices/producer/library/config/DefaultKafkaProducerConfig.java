@@ -113,7 +113,7 @@ public class DefaultKafkaProducerConfig<T> {
         addTruststoreProperties(properties);
         DefaultKafkaProducerFactory<String, T> producerFactory = new DefaultKafkaProducerFactory<>(properties);
         producerFactory.addListener(new MicrometerProducerListener<>(Metrics.globalRegistry,
-                Collections.singletonList(new ImmutableTag("customTag", "customTagValue"))));
+                Collections.singletonList(new ImmutableTag("customTag", "producer-library-metrics"))));
 
         return producerFactory;
     }

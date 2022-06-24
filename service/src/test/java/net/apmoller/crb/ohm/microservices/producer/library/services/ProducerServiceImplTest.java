@@ -9,7 +9,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
-import org.apache.poi.ss.formula.functions.T;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,12 +17,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
-import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.TransactionTimedOutException;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,184 +63,110 @@ public class ProducerServiceImplTest<T> {
     private SerializationException serializationException;
 
     @Autowired
-    private ProducerServiceImpl producerServiceImpl;
+    private ProducerServiceImpl<T> producerServiceImpl;
 
     @MockBean
     private MessagePublisherUtil<T> messagePublisherUtil;
 
-    @Test
-    void testMessageSentToTopic() throws IOException {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
+    private Map<String, Object> kafkaHeader;
+
+    private final String message = "test";
+
+    @BeforeEach
+    void setUp() {
+        kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        producerServiceImpl.produceMessages(message, kafkaHeader);
+    }
+
+    @Test
+    void testMessageSentToTopic() {
+        producerServiceImpl.produceMessages((T) message, kafkaHeader);
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
     @Test
     void testMessageSentToTopicFailure() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         doThrow(RuntimeException.class).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
-        assertThrows(RuntimeException.class, () -> producerServiceImpl.produceMessages(message, new HashMap<>()));
+        assertThrows(RuntimeException.class, () -> producerServiceImpl.produceMessages((T) message, kafkaHeader));
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
     @Test
-    void testTopicNotFound() throws TopicNameValidationException {
-        String message = "test Message";
-        String producerTopic = "";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    void testTopicNotFound() {
         doThrow(TopicNameValidationException.class).when(validate).validateInputs(any(), any());
         assertThrows(TopicNameValidationException.class,
-                () -> producerServiceImpl.produceMessages(message, kafkaHeader));
+                () -> producerServiceImpl.produceMessages((T) message, kafkaHeader));
         verify(messagePublisherUtil, times(0)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
     @Test
-    void testKafkaServerNotFoundException() throws KafkaException {
-        String message = "test Message";
-        String producerTopic = "test";
-        Map<String, Object> kafkaHeader = new HashMap<>();
+    void testKafkaServerNotFoundException() {
         doThrow(KafkaServerNotFoundException.class).when(validate).validateInputs(any(), any());
         assertThrows(KafkaServerNotFoundException.class,
-                () -> producerServiceImpl.produceMessages(message, kafkaHeader));
-
+                () -> producerServiceImpl.produceMessages((T) message, kafkaHeader));
         verify(messagePublisherUtil, times(0)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
 
     @Test
-    void testProducerServiceForRecover() throws IOException {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, message, kafkaHeader);
+    void testProducerServiceForRecover() {
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, (T) message, kafkaHeader);
         verify(messagePublisherUtil, times(0)).publishToDltTopic(any(), anyMap(), anyString(),
                 any(TopicNameValidationException.class));
     }
 
     @Test
-    void testRecoverInvalidTopicNameExceptionTest() throws IOException {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    void testRecoverInvalidTopicNameExceptionTest() {
+        doThrow(topicNameValidationException).when(messagePublisherUtil)
+                .produceToRetryOrDlt(topicNameValidationException, (T) message, kafkaHeader);
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
-                .publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader));
+                .publishMessageOnRetryOrDltTopic(topicNameValidationException, (T) message, kafkaHeader));
+        verify(messagePublisherUtil, times(1)).produceToRetryOrDlt(topicNameValidationException, (T) message,
+                kafkaHeader);
     }
 
     @Test
-    void testRecoverTransactionTImeOutException() throws IOException {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    void testRecoverTransactionTImeOutException() {
         when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, message, kafkaHeader);
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, (T) message, kafkaHeader);
         verify(messagePublisherUtil, times(0)).publishToRetryTopic(any(), anyMap(), anyString(), anyString(),
                 any(TopicNameValidationException.class));
     }
 
     @Test
-    void testRecoverForTimeOutException() throws IOException {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    void testRecoverForTimeOutException() {
         when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(timeoutException, message, kafkaHeader);
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(timeoutException, (T) message, kafkaHeader);
         verify(messagePublisherUtil, times(0)).publishToRetryTopic(any(), anyMap(), anyString(), anyString(),
                 any(TopicNameValidationException.class));
     }
 
     @Test
-    void testMessageSentToRetryTopicFailure() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.FALSE);
-        doThrow(NullPointerException.class).when(messagePublisherUtil).publishToDltTopic(any(), anyMap(), anyString(),
-                any(NullPointerException.class));
-        assertThrows(NullPointerException.class,
-                () -> producerServiceImpl.publishMessageOnRetryOrDltTopic(nullPointerException, message, kafkaHeader));
-
-        verify(messagePublisherUtil, times(1)).publishToDltTopic(any(), anyMap(), anyString(),
-                any(NullPointerException.class));
-    }
-
-    @Test
-    void testDeadLetterTopicNotFound() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    void testInvalidMainTopic() {
+        doThrow(topicNameValidationException).when(messagePublisherUtil)
+                .produceToRetryOrDlt(topicNameValidationException, (T) message, kafkaHeader);
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
-                .publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader));
-        Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
-    }
-
-    @Test
-    void testInvalidMainTopic() throws TopicNameValidationException {
-        String message = "test Message";
-        String deadLetterTopic = "";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
-                .publishMessageOnRetryOrDltTopic(topicNameValidationException, message, kafkaHeader));
-        Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
-    }
-
-    @Test
-    void testInvalidBootstarpServer() {
-        String message = "test Message";
-        String deadLetterTopic = "";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        try {
-            producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaServerNotFoundException, message, kafkaHeader);
-        } catch (KafkaServerNotFoundException e) {
-            log.info("Invalid Kafka bootStrap Server");
-        }
+                .publishMessageOnRetryOrDltTopic(topicNameValidationException, (T) message, kafkaHeader));
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
 
     @Test
     void testTopicAuthorizationException() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
                 new TopicAuthorizationException("test"));
         doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
         assertThrows(org.apache.kafka.common.KafkaException.class,
-                () -> producerServiceImpl.produceMessages(message, kafkaHeader));
+                () -> producerServiceImpl.produceMessages((T) message, kafkaHeader));
     }
 
     @Test
     void testPostingOnRetryTopicWhenTopicAuthorizationException() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
         when(environment.resolvePlaceholders(ConfigConstants.RETRY_TOPIC))
                 .thenReturn("${kafka.notification.retry-topic}");
         when(context.getEnvironment()).thenReturn(environment);
         org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
                 new TopicAuthorizationException("test"));
-        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, message, kafkaHeader);
-        verify(messagePublisherUtil, times(1)).publishToRetryTopic(any(), anyMap(), any(), any(), any());
-    }
-
-    @Test
-    void testPostingOnDLTWhenTopicAuthorizationException() {
-        String message = "test Message";
-        Map<String, Object> kafkaHeader = new HashMap<>();
-        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
-        when(environment.resolvePlaceholders(ConfigConstants.DLT))
-                .thenReturn("${kafka.notification.dead-letter-topic}");
-        when(context.getEnvironment()).thenReturn(environment);
-        org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
-                new TopicAuthorizationException("test"));
-        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.FALSE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, message, kafkaHeader);
-        verify(messagePublisherUtil, times(1)).publishToDltTopic(any(), anyMap(), any(), any());
+        doNothing().when(messagePublisherUtil).produceToRetryOrDlt(kafkaException, (T) message, kafkaHeader);
+        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, (T) message, kafkaHeader);
+        verify(messagePublisherUtil, times(1)).produceToRetryOrDlt(kafkaException, (T) message, kafkaHeader);
     }
 }

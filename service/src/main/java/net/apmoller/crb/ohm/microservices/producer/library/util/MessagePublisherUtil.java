@@ -79,15 +79,16 @@ public class MessagePublisherUtil<T> {
      * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     public void produceToRetryOrDlt(RuntimeException e, T message, Map<String, Object> kafkaHeader)
-            throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException, KafkaHeaderValidationException {
-        if (ConfigValidator.isInputValidationException(e)) {
+            throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException,
+            KafkaHeaderValidationException {
+        if (configValidator.isInputValidationException(e)) {
             log.info("Throwing validation exception: {}", e.getClass().getName());
             throw e;
         }
         try {
             var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
             var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
-            if (ConfigValidator.sendToRetryTopic(retryTopic, e)) {
+            if (configValidator.sendToRetryTopic(retryTopic, e)) {
                 publishToRetryTopic(message, kafkaHeader, retryTopic, dltTopic, e);
             } else {
                 publishToDltTopic(message, kafkaHeader, dltTopic, e);
@@ -111,14 +112,14 @@ public class MessagePublisherUtil<T> {
      * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     public void produceMessageToRetryOrDlt(RuntimeException e, Map<String, String> topics, T message,
-            Map<String, Object> kafkaHeader)
-            throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException, KafkaHeaderValidationException {
-        if (ConfigValidator.isInputValidationException(e)) {
+            Map<String, Object> kafkaHeader) throws KafkaServerNotFoundException, TopicNameValidationException,
+            PayloadValidationException, KafkaHeaderValidationException {
+        if (configValidator.isInputValidationException(e)) {
             log.info("Throwing validation exception: {}", e.getClass().getName());
             throw e;
         }
         try {
-            if (ConfigValidator.sendToRetryTopic(topics, e)) {
+            if (configValidator.sendToRetryTopic(topics, e)) {
                 publishMessageToRetryTopic(message, kafkaHeader, e, topics);
             } else if (configValidator.dltTopicPresent(topics)) {
                 var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);

@@ -34,7 +34,7 @@ public class ConfigValidator<T> {
     public void validateInputs(String producerTopic, T message) {
         var bootstrapServer = context.getEnvironment().resolvePlaceholders(ConfigConstants.BOOTSTRAP_SERVER);
         payloadValidation(message);
-        notificationTopicValidation(producerTopic);
+        targetTopicValidation(producerTopic);
         bootstrapServerValidation(bootstrapServer);
     }
 
@@ -54,7 +54,7 @@ public class ConfigValidator<T> {
      *
      * @param producerTopic - target topic name
      */
-    private void notificationTopicValidation(String producerTopic) {
+    private void targetTopicValidation(String producerTopic) {
         if (Objects.isNull(producerTopic) || producerTopic.isEmpty()) {
             throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         } else if ((producerTopic.startsWith("${"))) {
@@ -67,7 +67,7 @@ public class ConfigValidator<T> {
      *
      * @param retryTopic - retry topic name from config
      */
-    public static boolean retryTopicIsPresent(String retryTopic) {
+    public boolean retryTopicIsPresent(String retryTopic) {
         return ((Objects.nonNull(retryTopic)) && !(retryTopic.isEmpty()) && !(retryTopic.startsWith("${")));
     }
 
@@ -85,7 +85,7 @@ public class ConfigValidator<T> {
      *
      * @param bootstrapServer - kafka bootstrap server value from config
      */
-    private void bootstrapServerValidation(String bootstrapServer) {
+    public void bootstrapServerValidation(String bootstrapServer) {
         if (Objects.isNull(bootstrapServer) || bootstrapServer.isEmpty()) {
             throw new KafkaServerNotFoundException(ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG);
         } else if (bootstrapServer.startsWith("${")) {
@@ -108,7 +108,7 @@ public class ConfigValidator<T> {
         if (Objects.isNull(topics) || topics.isEmpty()) {
             throw new TopicNameValidationException(ConfigConstants.INVALID_TOPIC_MAP_ERROR_MSG);
         } else {
-            if (notificationTopicNotPresent(topics))
+            if (targetTopicNotPresent(topics))
                 throw new TopicNameValidationException(ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         }
 
@@ -122,7 +122,7 @@ public class ConfigValidator<T> {
      *
      * @param topics - Topics name map from input
      */
-    private boolean notificationTopicNotPresent(Map<String, String> topics) {
+    private boolean targetTopicNotPresent(Map<String, String> topics) {
         return !topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
                 || (topics.containsKey(ConfigConstants.NOTIFICATION_TOPIC_KEY)
                         && ((Objects.isNull(topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY)))
@@ -134,7 +134,7 @@ public class ConfigValidator<T> {
      *
      * @param topics - Topics name map from input
      */
-    public static boolean retryTopicPresent(Map<String, String> topics) {
+    public boolean retryTopicPresent(Map<String, String> topics) {
         return topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
                 && (Objects.nonNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)))
                 && !((topics.get(ConfigConstants.RETRY_TOPIC_KEY)).isEmpty());
@@ -155,7 +155,7 @@ public class ConfigValidator<T> {
      * Method validates the type of Runtime exception that occurred on target topic
      * @param ex - Runtime exception
      */
-    public static boolean isInputValidationException(RuntimeException ex) {
+    public boolean isInputValidationException(RuntimeException ex) {
         return ((ex instanceof KafkaServerNotFoundException) || (ex instanceof TopicNameValidationException)
                 || (ex instanceof PayloadValidationException) || (ex instanceof KafkaHeaderValidationException));
     }
@@ -165,7 +165,7 @@ public class ConfigValidator<T> {
      * @param ex - Runtime exception
      * @param topics - map containing topic names
      */
-    public static boolean sendToRetryTopic(Map<String, String> topics, RuntimeException ex) {
+    public boolean sendToRetryTopic(Map<String, String> topics, RuntimeException ex) {
         return retryTopicPresent(topics)
                 && ((ex instanceof TransactionTimedOutException) || (ex instanceof TimeoutException)
                         || (Objects.nonNull(ex.getCause()) && (ex.getCause() instanceof TopicAuthorizationException)));
@@ -177,7 +177,7 @@ public class ConfigValidator<T> {
      * @param ex - Runtime exception
      * @param retryTopic - retry topic from config
      */
-    public static boolean sendToRetryTopic(String retryTopic, RuntimeException ex) {
+    public boolean sendToRetryTopic(String retryTopic, RuntimeException ex) {
         return retryTopicIsPresent(retryTopic)
                 && ((ex instanceof TransactionTimedOutException) || (ex instanceof TimeoutException)
                         || (Objects.nonNull(ex.getCause()) && (ex.getCause() instanceof TopicAuthorizationException)));
