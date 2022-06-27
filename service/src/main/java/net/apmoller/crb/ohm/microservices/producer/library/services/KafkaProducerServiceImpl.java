@@ -3,6 +3,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaHeaderValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
@@ -31,46 +32,44 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     /**
      * Method is used to Send Message to kafka topic after validations.
      * 
-     * @param topics
-     *            Map containing target, retry and dead letter topic names
-     * @param message
-     *            payload
-     * @param kafkaHeader
-     *            Map containing headers to be posted on topic
-     * 
-     * @throws TopicNameValidationException
-     * @throws PayloadValidationException
-     * @throws KafkaServerNotFoundException
+     * @param topics - Map containing target, retry and dead letter topic names
+     * @param message - payload
+     * @param kafkaHeader - Map containing headers to be posted on topic
+     * @throws TopicNameValidationException - for missing topic name
+     * @throws PayloadValidationException - for null payload
+     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
+     * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     @Override
     @LogException
-    @Retryable(value = { TransactionTimedOutException.class,
-            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+    @Retryable(value = { TransactionTimedOutException.class,TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}",
+            backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
+        String producerTopic = null;
         try {
             configValidator.validateInputsForMultipleProducerFlow(topics, message);
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(
-                    topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY), message);
+            producerTopic = topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY);
+            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
         } catch (Exception ex) {
-            log.error("Exception occurred while posting message to kafka topic ", ex);
+            log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
             throw ex;
         }
-        log.info("Time taken to execute produceMessages: {} milliseconds", (System.currentTimeMillis() - startedAt));
+         log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
 
     /**
      * Method Sends the Message to Retry Or DLT Topic.
      * 
-     * @param e
-     * @param message
-     * @param kafkaHeader
-     * 
-     * @throws TopicNameValidationException
-     * @throws PayloadValidationException
-     * @throws KafkaServerNotFoundException
+     * @param e - Runtime exception thrown while posting message to target topic
+     * @param message - actual payload
+     * @param kafkaHeader - Map containing headers to be posted on topic
+     * @throws TopicNameValidationException - for missing topic name
+     * @throws PayloadValidationException - for null payload
+     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
+     * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     @LogException
     @Recover
@@ -84,7 +83,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             log.error("Exception while pushing message to error topic ", ex);
             throw ex;
         }
-        log.info("Time taken to execute publishMessageOnRetryOrDltTopic: {} milliseconds",
+        log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic: {} milliseconds",
                 (System.currentTimeMillis() - startedAt));
     }
 

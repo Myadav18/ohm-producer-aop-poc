@@ -5,6 +5,7 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameV
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.TimeoutException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,14 +45,22 @@ public class KafkaProducerServiceTest<T> {
     @Value("${spring.retry.maximum.attempts}")
     Integer retryCount;
 
+    Map<String, Object> kafkaHeader;
+
+    @BeforeEach
+    void setUp() {
+        kafkaHeader = new HashMap<>();
+        kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+    }
+
     @Test
-    void testPostingMessageOnTopic() throws IOException {
+    void testPostingMessageOnTopic() {
         String payload = "test";
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>());
+        kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader);
         verify(validator, times(1)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
@@ -67,7 +76,7 @@ public class KafkaProducerServiceTest<T> {
         doThrow(TopicNameValidationException.class).when(validator).validateInputsForMultipleProducerFlow(anyMap(),
                 (T) anyString());
         assertThrows(TopicNameValidationException.class,
-                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>()));
+                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
         verify(validator, times(1)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(0)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
@@ -83,7 +92,7 @@ public class KafkaProducerServiceTest<T> {
         doThrow(TimeoutException.class).when(messagePublisherUtil)
                 .produceMessageToRetryOrDlt(any(TimeoutException.class), anyMap(), (T) anyString(), anyMap());
         assertThrows(RuntimeException.class,
-                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>()));
+                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
         verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(retryCount)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
@@ -99,7 +108,7 @@ public class KafkaProducerServiceTest<T> {
         doThrow(TimeoutException.class).when(messagePublisherUtil)
                 .produceMessageToRetryOrDlt(any(TimeoutException.class), anyMap(), (T) anyString(), anyMap());
         assertThrows(TimeoutException.class,
-                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>()));
+                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
         verify(messagePublisherUtil, times(1)).produceMessageToRetryOrDlt(any(TimeoutException.class), anyMap(), any(),
                 anyMap());
         verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
@@ -107,14 +116,14 @@ public class KafkaProducerServiceTest<T> {
     }
 
     @Test
-    void testRetryTopic() throws IOException {
+    void testRetryTopic() {
         String payload = "test";
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
         doThrow(TopicNameValidationException.class).when(validator).validateInputsForMultipleProducerFlow(anyMap(),
                 (T) anyString());
-        kafkaProducerService.produceMessages(topicMap, (T) payload, new HashMap<>());
+        kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader);
         verify(validator, times(1)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(0)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
