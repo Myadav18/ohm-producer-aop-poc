@@ -55,9 +55,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      */
     @Override
     @LogException
-    @Retryable(include = { TransactionTimedOutException.class, TimeoutException.class }, exclude = {
-            RecordTooLargeException.class, ClaimsCheckFailedException.class,
-            TopicNameValidationException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+    @Retryable(value = { TransactionTimedOutException.class, TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}",
+            backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader) throws TopicNameValidationException,
             KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
