@@ -24,19 +24,24 @@ import java.util.Map;
 public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     @Autowired
-    private ApplicationContext context;
+    private final ApplicationContext context;
 
     @Autowired
-    private ConfigValidator<T> configValidator;
+    private final ConfigValidator<T> configValidator;
+
 
     @Autowired
-    private KafkaTemplate<String, T> kafkaTemplate;
+    private final MessagePublisherUtil<T> messagePublisherUtil;
 
     @Autowired
-    private MessagePublisherUtil<T> messagePublisherUtil;
+    private final ClaimsCheckService<T> claimsCheckService;
 
-    @Autowired
-    private ClaimsCheckService<T> claimsCheckService;
+    public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
+        this.context = context;
+        this.configValidator = configValidator;
+        this.messagePublisherUtil = messagePublisherUtil;
+        this.claimsCheckService = claimsCheckService;
+    }
 
     /**
      * Method is used to Send Message to kafka topic after validations.

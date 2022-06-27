@@ -22,13 +22,19 @@ import java.util.Map;
 public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     @Autowired
-    private ConfigValidator<T> configValidator;
+    private final ConfigValidator<T> configValidator;
 
     @Autowired
-    private MessagePublisherUtil<T> messagePublisherUtil;
+    private final MessagePublisherUtil<T> messagePublisherUtil;
 
     @Autowired
-    private ClaimsCheckService<T> claimsCheckService;
+    private final ClaimsCheckService<T> claimsCheckService;
+
+    public KafkaProducerServiceImpl(ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
+        this.configValidator = configValidator;
+        this.messagePublisherUtil = messagePublisherUtil;
+        this.claimsCheckService = claimsCheckService;
+    }
 
     /**
      * Method is used to Send Message to kafka topic after validations.

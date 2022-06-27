@@ -64,7 +64,7 @@ public class ConfigValidator<T> {
 
     public boolean claimsCheckTopicIsPresent(String claimsCheckTopic) {
         return ((Objects.nonNull(claimsCheckTopic)) && !(claimsCheckTopic.isEmpty())
-                && !((claimsCheckTopic.startsWith("${"))));
+                && !(claimsCheckTopic.startsWith("${")));
     }
 
     /**

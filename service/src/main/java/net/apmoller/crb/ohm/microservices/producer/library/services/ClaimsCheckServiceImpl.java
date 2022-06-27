@@ -1,5 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.claimscheck.request.ClaimsCheckRequestPayload;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
@@ -12,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
@@ -20,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
+@AllArgsConstructor
+@NoArgsConstructor
 public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
 
     @Autowired
@@ -28,31 +31,23 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
     @Autowired
     private MessagePublisherUtil<T> messagePublisherUtil;
 
-    @Autowired
-    private ConfigValidator<T> configValidator;
-
     @Value(ConfigConstants.AZURE_STORAGE_CONTAINER_NAME)
     private String CONTAINER_NAME;
 
     @Value(ConfigConstants.BLOB_ITEM_NAME_PREFIX)
     private String BLOB_ITEM_NAME_PREFIX;
 
-    @Autowired
-    private CompressionUtil compressionUtil;
 
     @Override
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, String producerTopic, T data)
             throws ClaimsCheckFailedException {
         try {
             long time = System.currentTimeMillis();
-            // compress data to gzip
             String url = uploadToAzureBlob(
-                    compressionUtil.gzipCompress(data.toString().getBytes(StandardCharsets.UTF_8)));
+                    CompressionUtil.gzipCompress(data.toString().getBytes(StandardCharsets.UTF_8)));
             var claimscheckpayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
             log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) claimscheckpayload);
-            // kafkaHeader.put(ConfigConstants.CLAIMS_CHECK_PAYLOAD_REFERENCE_HEADER, url);
-            // kafkaHeader.put("isAvroPayload", "false");
+            ProducerRecord<String, T> producerRecord = new ProducerRecord<String, T>(producerTopic, (T) claimscheckpayload);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
             log.info("Published to Kafka topic post claim check in {} ms", System.currentTimeMillis() - time);
         } catch (Exception e) {
