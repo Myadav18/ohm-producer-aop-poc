@@ -48,6 +48,9 @@ public class ProducerServiceImplTest<T> {
     private TimeoutException timeoutException;
 
     @MockBean
+    private ClaimsCheckService<T> claimsCheckService;
+
+    @MockBean
     private TransactionTimedOutException transactionTimedOutException;
 
     @MockBean

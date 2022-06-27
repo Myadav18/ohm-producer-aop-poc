@@ -42,6 +42,9 @@ public class KafkaProducerServiceTest<T> {
     @Autowired
     private KafkaProducerService<T> kafkaProducerService;
 
+    @MockBean
+    private ClaimsCheckService<T> claimsCheckService;
+
     @Value("${spring.retry.maximum.attempts}")
     Integer retryCount;
 

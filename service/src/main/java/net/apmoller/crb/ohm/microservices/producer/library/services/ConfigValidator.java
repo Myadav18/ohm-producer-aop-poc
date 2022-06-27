@@ -62,6 +62,11 @@ public class ConfigValidator<T> {
         }
     }
 
+    public boolean claimsCheckTopicIsPresent(String claimsCheckTopic) {
+        return ((Objects.nonNull(claimsCheckTopic)) && !(claimsCheckTopic.isEmpty())
+                && !((claimsCheckTopic.startsWith("${"))));
+    }
+
     /**
      * Method checks if retry topic is Valid.
      *

@@ -3,12 +3,10 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaHeaderValidationException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
@@ -29,6 +27,9 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     @Autowired
     private MessagePublisherUtil<T> messagePublisherUtil;
 
+    @Autowired
+    private ClaimsCheckService<T> claimsCheckService;
+
     /**
      * Method is used to Send Message to kafka topic after validations.
      * 
@@ -42,10 +43,12 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
      */
     @Override
     @LogException
-    @Retryable(value = { TransactionTimedOutException.class,TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}",
-            backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+    @Retryable(include = { TransactionTimedOutException.class, TimeoutException.class }, exclude = {
+            RecordTooLargeException.class,
+            ClaimsCheckFailedException.class,TopicNameValidationException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
+            KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
@@ -53,6 +56,14 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             producerTopic = topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+        } catch (RecordTooLargeException ex) {
+            String claimschecktopic = topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY);
+            if (configValidator.claimsCheckTopicIsPresent(claimschecktopic)) {
+                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
+            } else {
+                log.error("Exception occurred because claims check topic not found", ex);
+                throw new TopicNameValidationException("claims check topic not found in request");
+            }
         } catch (Exception ex) {
             log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
             throw ex;

@@ -4,7 +4,14 @@ FORGEROCK_KEYSTORE: https://api-cdt.maersk.com/oauth2/jwks?provider=ciam
 #kafkabootstrapservers: localhost:9092
 server:
   port: 8081
-
+#events-payload:
+#  file-name: testing_claimscheck
+#azure:
+#  storage:
+#    container-name: test
+#  storage.account-name: claimscheckpayloads
+#  storage.account-key: 8OD1vjEqe7ux9m7UiBWImDMfmsWfu52rjkdsHoQ6gUrDyNThUt9U7UDeeEZWssp/IaVWv/CTXv8spi0Kug9gpA==
+#  storage.blob-endpoint: https://claimscheckpayloads.blob.core.windows.net
 spring:
   #  profiles:     #too pas by pass jwt plz use this profile only for local testing and for integration testing
   #    active: integrationTest
