@@ -1,5 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.compression;
 
+import net.apmoller.crb.ohm.microservices.producer.library.util.CompressionUtil;
 import net.apmoller.ohm.adapter.avro.model.EventNotificationsAdapterModel;
 import net.minidev.json.JSONObject;
 import org.junit.Before;
@@ -61,6 +62,19 @@ public class CustomSerializerTest {
         String message = null;
         byte[] compressedPayload = customSerializer.serialize(null, null, message);
         Assertions.assertEquals(null, compressedPayload);
+    }
+
+    @Test
+    public void testGzipMessage() {
+        String message = null;
+        byte[] compressedPayload = CompressionUtil.gzipCompress("test".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertNotEquals(null, compressedPayload);
+    }
+    @Test
+    public void testUnGzipMessage() {
+        String message = null;
+        byte[] compressedPayload = CompressionUtil.gzipUncompress("test".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertNotEquals(null, compressedPayload);
     }
 
     @Test

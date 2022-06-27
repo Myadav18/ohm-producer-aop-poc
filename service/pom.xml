@@ -115,6 +115,7 @@
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/storage/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/exceptions/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckService.*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*</exclude>
             <exclude>**net/apmoller/ohm/adapter/avro/model/*</exclude>
           </excludes>
           <destFile>${basedir}/target/site/jacoco/jacoco.exec</destFile>
