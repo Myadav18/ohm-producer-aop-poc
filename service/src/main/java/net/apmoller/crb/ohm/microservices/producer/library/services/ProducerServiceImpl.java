@@ -73,7 +73,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
             } else {
                 log.error("Exception occurred because claims check topic not found", ex);
-                throw new TopicNameValidationException("claims check topic not found in request");
+                throw new ClaimsCheckFailedException("claims check topic not found in request",ex);
             }
         } catch (Exception ex) {
             log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
@@ -98,6 +98,9 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
+        if (e instanceof ClaimsCheckFailedException){
+            throw e;
+        }
         try {
             messagePublisherUtil.produceToRetryOrDlt(e, message, kafkaHeader);
         } catch (Exception ex) {

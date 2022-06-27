@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -64,16 +65,17 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
         } catch (RecordTooLargeException ex) {
             String claimschecktopic = topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY);
-            if (configValidator.claimsCheckTopicIsPresent(claimschecktopic)) {
+            if (Objects.nonNull(claimschecktopic)) {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
             } else {
                 log.error("Exception occurred because claims check topic not found", ex);
-                throw new TopicNameValidationException("claims check topic not found in request");
+                throw new ClaimsCheckFailedException("claims check topic not found in request",ex);
             }
-        } catch (Exception ex) {
+        }catch (Exception ex) {
             log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
             throw ex;
         }
+
          log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
 
@@ -93,6 +95,9 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, Map<String, String> topics, T message,
             Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
+        if (e instanceof ClaimsCheckFailedException){
+            throw e;
+        }
         long startedAt = System.currentTimeMillis();
         try {
             messagePublisherUtil.produceMessageToRetryOrDlt(e, topics, message, kafkaHeader);
