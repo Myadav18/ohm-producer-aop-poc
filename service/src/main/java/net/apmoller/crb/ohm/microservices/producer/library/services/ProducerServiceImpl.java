@@ -85,14 +85,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     /**
      * Method Sends the Message to Retry Or DLT Topic.
-     *
-     * @param e - Runtime exception from main method
-     * @param message - payload
-     * @param kafkaHeader - Kafka headers map
-     * @throws TopicNameValidationException - for missing topic name
-     * @throws PayloadValidationException - for null payload
-     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
-     * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     @LogException
     @Recover

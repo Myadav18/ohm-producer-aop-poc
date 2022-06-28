@@ -84,14 +84,6 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     /**
      * Method Sends the Message to Retry Or DLT Topic.
-     * 
-     * @param e - Runtime exception thrown while posting message to target topic
-     * @param message - actual payload
-     * @param kafkaHeader - Map containing headers to be posted on topic
-     * @throws TopicNameValidationException - for missing topic name
-     * @throws PayloadValidationException - for null payload
-     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
-     * @throws KafkaHeaderValidationException - for missing kafka headers
      */
     @LogException
     @Recover
