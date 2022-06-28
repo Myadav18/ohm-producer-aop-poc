@@ -29,14 +29,14 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @Autowired
     private final ConfigValidator<T> configValidator;
 
-
     @Autowired
     private final MessagePublisherUtil<T> messagePublisherUtil;
 
     @Autowired
-    private final ClaimsCheckService<T> claimsCheckService;
+    private final ClaimsCheckServiceImpl<T> claimsCheckService;
 
-    public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
+    public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
+            MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckServiceImpl<T> claimsCheckService) {
         this.context = context;
         this.configValidator = configValidator;
         this.messagePublisherUtil = messagePublisherUtil;
@@ -55,8 +55,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
      */
     @Override
     @LogException
-    @Retryable(value = { TransactionTimedOutException.class, TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}",
-            backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
+    @Retryable(value = { TransactionTimedOutException.class,
+            TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader) throws TopicNameValidationException,
             KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
@@ -66,17 +66,19 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             configValidator.validateInputs(producerTopic, message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-        } catch (RecordTooLargeException ex) {
-            String claimschecktopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
-            if (configValidator.claimsCheckTopicIsPresent(claimschecktopic)) {
-                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
-            } else {
-                log.error("Exception occurred because claims check topic not found", ex);
-                throw new ClaimsCheckFailedException("claims check topic not found in request",ex);
-            }
         } catch (Exception ex) {
-            log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
-            throw ex;
+            if (ex.getCause() instanceof RecordTooLargeException) {
+                String claimschecktopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
+                if (configValidator.claimsCheckTopicIsPresent(claimschecktopic)) {
+                    claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
+                } else {
+                    log.error("Exception occurred because claims check topic not found", ex);
+                    throw new ClaimsCheckFailedException("claims check topic not found in request", ex);
+                }
+            } else {
+                log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
+                throw ex;
+            }
         }
          log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
@@ -95,9 +97,10 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @LogException
     @Recover
     public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
+            KafkaHeaderValidationException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException){
+        if (e instanceof ClaimsCheckFailedException) {
             throw e;
         }
         try {

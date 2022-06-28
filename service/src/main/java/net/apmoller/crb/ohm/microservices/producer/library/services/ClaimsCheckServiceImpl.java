@@ -12,6 +12,7 @@ import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisher
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -19,11 +20,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-@Service
+@Component
 @Slf4j
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
+public class ClaimsCheckServiceImpl<T> {
 
     @Autowired
     private FileService fileService;
@@ -37,8 +38,6 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
     @Value(ConfigConstants.BLOB_ITEM_NAME_PREFIX)
     private String BLOB_ITEM_NAME_PREFIX;
 
-
-    @Override
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, String producerTopic, T data)
             throws ClaimsCheckFailedException {
         try {
@@ -47,7 +46,8 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                     CompressionUtil.gzipCompress(data.toString().getBytes(StandardCharsets.UTF_8)));
             var claimscheckpayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
             log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<String, T>(producerTopic, (T) claimscheckpayload);
+            ProducerRecord<String, T> producerRecord = new ProducerRecord<String, T>(producerTopic,
+                    (T) claimscheckpayload);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
             log.info("Published to Kafka topic post claim check in {} ms", System.currentTimeMillis() - time);
         } catch (Exception e) {
