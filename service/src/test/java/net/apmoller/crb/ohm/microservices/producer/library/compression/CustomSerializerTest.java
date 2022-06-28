@@ -1,10 +1,11 @@
 package net.apmoller.crb.ohm.microservices.producer.library.compression;
 
+import net.apmoller.crb.ohm.microservices.producer.library.util.CompressionUtil;
 import net.apmoller.ohm.adapter.avro.model.EventNotificationsAdapterModel;
 import net.minidev.json.JSONObject;
 import org.junit.Before;
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -63,6 +64,12 @@ public class CustomSerializerTest {
         Assertions.assertEquals(null, compressedPayload);
     }
 
+    @Test
+    public void testGzipMessage() throws IOException {
+        String message = null;
+        byte[] compressedPayload = CompressionUtil.gzipCompress("test".getBytes(StandardCharsets.UTF_8));
+        Assertions.assertNotNull(compressedPayload);
+    }
     @Test
     public void testAvroMessageException() {
         List<String> downstream = new ArrayList<>();

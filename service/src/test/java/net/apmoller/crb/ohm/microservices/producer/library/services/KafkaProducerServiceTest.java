@@ -1,9 +1,12 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +44,9 @@ public class KafkaProducerServiceTest<T> {
 
     @Autowired
     private KafkaProducerService<T> kafkaProducerService;
+
+    @MockBean
+    private ClaimsCheckServiceImpl<T> claimsCheckService;
 
     @Value("${spring.retry.maximum.attempts}")
     Integer retryCount;
@@ -95,6 +101,43 @@ public class KafkaProducerServiceTest<T> {
                 () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
         verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(retryCount)).publishOnTopic(any(ProducerRecord.class), anyMap());
+    }
+
+    @Test
+    void testNoRetryWhenRuntimeExceptionInClaimsCheck() {
+        String payload = "test";
+        Map<String, String> topicMap = new HashMap<>();
+        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        topicMap.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, "claim");
+        RecordTooLargeException recordTooLargeException=new RecordTooLargeException("record too large");
+        KafkaException kafkaException = new KafkaException(recordTooLargeException);
+        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
+                anyMap());
+        kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader);
+        // verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
+        verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
+        verify(claimsCheckService, times(1)).handleClaimsCheckAfterGettingMemoryIssue(anyMap(), anyString(), any());
+    }
+
+    @Test
+    void testNoRetryWhenRuntimeExceptionInClaimsCheckAndClaimsCheckTopicNotPassed() {
+        String payload = "test";
+        Map<String, String> topicMap = new HashMap<>();
+        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
+        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
+        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
+        RecordTooLargeException recordTooLargeException=new RecordTooLargeException("record too large");
+        KafkaException kafkaException = new KafkaException(recordTooLargeException);
+        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
+                anyMap());
+        assertThrows(ClaimsCheckFailedException.class,
+                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
+        // verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
+        verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
+        verify(claimsCheckService, times(0)).handleClaimsCheckAfterGettingMemoryIssue(anyMap(), anyString(), any());
+
     }
 
     @Test

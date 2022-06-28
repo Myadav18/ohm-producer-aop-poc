@@ -10,7 +10,9 @@ public class ConfigConstants {
     public static final String BOOTSTRAP_SERVER = "${kafka.bootstrapserver}";
     public static final String RETRY_TOPIC = "${kafka.notification.retry-topic}";
     public static final String DLT = "${kafka.notification.dead-letter-topic}";
+    public static final String CLAIMS_CHECK = "${kafka.notification.claimscheck-topic}";
     public static final String NOTIFICATION_TOPIC_KEY = "notification-topic";
+    public static final String CLAIMS_CHECK_TOPIC_KEY = "claimscheck-topic";
     public static final String RETRY_TOPIC_KEY = "retry-topic";
     public static final String DEAD_LETTER_TOPIC_KEY = "dead-letter-topic";
     public static final String SCRAM_SASL_MECHANISM = "SCRAM-SHA-256";
@@ -25,4 +27,12 @@ public class ConfigConstants {
     public static final String INVALID_KAFKA_HEADER_MAP_ERROR_MSG = "Kafka headers map cannot be null or empty";
     public static final String INVALID_KAFKA_HEADER_VALUE_ERROR_MSG = "Value for Kafka header: %s cannot be null or empty";
 
+    // Azure constants
+    public static final String BLOB_ITEM_NAME_PREFIX = "${events-payload.file-name}";
+    public static final String AZURE_STORAGE_ACCOUNT_NAME = "${azure.storage.account-name}";
+    public static final String AZURE_STORAGE_ACCOUNT_KEY = "${azure.storage.account-key}";
+    public static final String AZURE_STORAGE_CONTAINER_NAME = "${azure.storage.container-name}";
+    public static final String AZURE_STORAGE_ENDPOINT = "${azure.storage.endpoint}";
+    public static final String AZURE_STORAGE_ENDPOINT_SUFFIX = "${azure.storage.endpoint-suffix}";
+    public static final String CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=%s";
 }

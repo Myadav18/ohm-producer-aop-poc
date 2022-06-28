@@ -6,10 +6,10 @@
   <parent>
     <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.1</version>
+    <version>3.0.0</version>
   </parent>
   <artifactId>producer-library-service</artifactId>
-  <version>2.0.1</version>
+  <version>3.0.0</version>
   <name>Online producer-library-service Service - Service</name>
   <description>producer-library-service service as a microservice for online</description>
   <properties>
@@ -21,6 +21,11 @@
       **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/domains/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/constants/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/exceptions/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckService.*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/storage/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/util/CompressionUtil.java*,
       **net/apmoller/ohm/adapter/avro/model/*
     </sonar.coverage.exclusions>
     </properties>
@@ -58,6 +63,17 @@
         <groupId>org.springframework.kafka</groupId>
         <artifactId>spring-kafka-test</artifactId>
         <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>com.azure.spring</groupId>
+        <artifactId>spring-cloud-azure-starter-storage-blob</artifactId>
+        <version>4.2.0</version>
+      </dependency>
+      <dependency>
+        <groupId>com.azure.spring</groupId>
+        <artifactId>azure-spring-boot-starter-storage</artifactId>
+        <version>3.13.0</version>
       </dependency>
     </dependencies>
 
@@ -101,6 +117,10 @@
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/models/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/config/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/constants/*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/storage/*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/exceptions/*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckService.*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*</exclude>
             <exclude>**net/apmoller/ohm/adapter/avro/model/*</exclude>
           </excludes>
           <destFile>${basedir}/target/site/jacoco/jacoco.exec</destFile>
@@ -144,7 +164,7 @@
               <goal>schema</goal>
             </goals>
             <configuration>
-              <sourceDirectory>src/test/java/avro</sourceDirectory>
+              <sourceDirectory>src/main/avro</sourceDirectory>
               <outputDirectory>${project.build.directory}/generated-sources</outputDirectory>
               <stringType>String</stringType>
             </configuration>

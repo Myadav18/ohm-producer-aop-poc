@@ -3,12 +3,17 @@ package net.apmoller.crb.ohm.microservices.producer.library.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.stereotype.Component;
+
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * Class is to Compress the Payload.
@@ -80,5 +85,23 @@ public class CompressionUtil {
         }
         return os.toByteArray();
     }
+    //this method will be used for compressing  data to gzip
+    public static byte[] gzipCompress(byte[] uncompressedData) throws IOException {
+        byte[] result = new byte[] {};
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(uncompressedData.length);
+                GZIPOutputStream gzipOS = new GZIPOutputStream(bos)) {
+            gzipOS.write(uncompressedData);
+            // You need to close it before using bos
+            gzipOS.close();
+            result = bos.toByteArray();
+        } catch (IOException e) {
+            log.error("Error occured while decompressing to gzip",e);
+            throw e;
+        }
+        return result;
+    }
+
+    //this method will be used for decompressing gzip data
+
 
 }

@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "ClaimsCheckRequestPayload",
+  "namespace": "net.apmoller.crb.ohm.claimscheck.request",
+  "fields": [
+    {
+      "name": "claimsCheckBlobUrl",
+      "type": "string",
+      "doc": "The will be blob url"
+    } ]
+
+}
