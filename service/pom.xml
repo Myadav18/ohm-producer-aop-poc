@@ -21,6 +21,11 @@
       **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/domains/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/constants/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/exceptions/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckService.*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/storage/*,
+      **/net/apmoller/crb/ohm/microservices/producer/library/util/CompressionUtil.java*,
       **net/apmoller/ohm/adapter/avro/model/*
     </sonar.coverage.exclusions>
     </properties>
