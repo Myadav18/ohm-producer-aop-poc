@@ -103,22 +103,5 @@ public class CompressionUtil {
 
     //this method will be used for decompressing gzip data
 
-    public static byte[] gzipUncompress(byte[] compressedData) throws IOException {
-        byte[] result = new byte[] {};
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
-             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-             GZIPInputStream gzipIS = new GZIPInputStream(bis)) {
-            byte[] buffer = new byte[1024];
-            int len;
-            while ((len = gzipIS.read(buffer)) != -1) {
-                bos.write(buffer, 0, len);
-            }
-            result = bos.toByteArray();
-        } catch (IOException e) {
-           log.error("Error occured while decompressing from gzip",e);
-            throw e;
-        }
-        return result;
-    }
 
 }

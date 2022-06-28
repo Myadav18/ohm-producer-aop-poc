@@ -71,13 +71,6 @@ public class CustomSerializerTest {
         Assertions.assertNotNull(compressedPayload);
     }
     @Test
-    public void testUnGzipMessage() throws IOException {
-        String message = null;
-        byte[] compressedPayload = CompressionUtil.gzipUncompress("test".getBytes(StandardCharsets.UTF_8));
-        Assertions.assertNotNull(compressedPayload);
-    }
-
-    @Test
     public void testAvroMessageException() {
         List<String> downstream = new ArrayList<>();
         downstream.add("documentservice");
