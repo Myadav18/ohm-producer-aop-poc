@@ -65,13 +65,13 @@ public class CustomSerializerTest {
     }
 
     @Test
-    public void testGzipMessage() {
+    public void testGzipMessage() throws IOException {
         String message = null;
         byte[] compressedPayload = CompressionUtil.gzipCompress("test".getBytes(StandardCharsets.UTF_8));
         Assertions.assertNotNull(compressedPayload);
     }
     @Test
-    public void testUnGzipMessage() {
+    public void testUnGzipMessage() throws IOException {
         String message = null;
         byte[] compressedPayload = CompressionUtil.gzipUncompress("test".getBytes(StandardCharsets.UTF_8));
         Assertions.assertNotNull(compressedPayload);

@@ -3,6 +3,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayInputStream;
@@ -84,8 +85,8 @@ public class CompressionUtil {
         }
         return os.toByteArray();
     }
-
-    public static byte[] gzipCompress(byte[] uncompressedData) {
+    //this method will be used for compressing  data to gzip
+    public static byte[] gzipCompress(byte[] uncompressedData) throws IOException {
         byte[] result = new byte[] {};
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(uncompressedData.length);
                 GZIPOutputStream gzipOS = new GZIPOutputStream(bos)) {
@@ -94,12 +95,15 @@ public class CompressionUtil {
             gzipOS.close();
             result = bos.toByteArray();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Error occured while decompressing to gzip",e);
+            throw e;
         }
         return result;
     }
 
-    public static byte[] gzipUncompress(byte[] compressedData) {
+    //this method will be used for decompressing gzip data
+
+    public static byte[] gzipUncompress(byte[] compressedData) throws IOException {
         byte[] result = new byte[] {};
         try (ByteArrayInputStream bis = new ByteArrayInputStream(compressedData);
              ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -111,7 +115,8 @@ public class CompressionUtil {
             }
             result = bos.toByteArray();
         } catch (IOException e) {
-            e.printStackTrace();
+           log.error("Error occured while decompressing from gzip",e);
+            throw e;
         }
         return result;
     }
