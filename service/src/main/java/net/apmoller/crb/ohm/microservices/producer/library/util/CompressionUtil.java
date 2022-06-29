@@ -26,7 +26,7 @@ public class CompressionUtil {
     /**
      * Private Constructor
      */
-    private CompressionUtil() {
+    public CompressionUtil() {
     }
 
     /**
