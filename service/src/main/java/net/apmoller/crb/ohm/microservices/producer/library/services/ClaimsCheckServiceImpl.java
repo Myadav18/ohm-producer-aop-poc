@@ -13,9 +13,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +40,7 @@ public class ClaimsCheckServiceImpl<T> {
         try {
             long time = System.currentTimeMillis();
             String url = uploadToAzureBlob(
-                    CompressionUtil.gzipCompress(data.toString().getBytes(StandardCharsets.UTF_8)));
+                    CompressionUtil.gzipCompress(data));
             var claimscheckpayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
             log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<String, T>(producerTopic,
