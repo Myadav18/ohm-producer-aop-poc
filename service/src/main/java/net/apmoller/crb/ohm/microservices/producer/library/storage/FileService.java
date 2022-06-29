@@ -28,8 +28,7 @@ public class FileService {
         String filenamefinal = filename.concat(".dat");
         BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(filenamefinal).getBlockBlobClient();
         try (BlobOutputStream bos = blockBlobClient.getBlobOutputStream()) {
-            byte[] byteArray = file;
-            bos.write(byteArray);
+            bos.write(file);
         }
         String url = blockBlobClient.getBlobUrl();
         log.info("blob url {} ", url);
