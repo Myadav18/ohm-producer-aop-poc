@@ -78,8 +78,6 @@ public class DefaultKafkaProducerConfig<T> {
     private boolean specificAvroReader;
     @Value("${kafka.properties.auto.register.schemas:false}")
     private boolean autoRegisterSchemas;
-    @Value("${kafka.producer.value-serializer}")
-    private String valueSerializer;
     @Value("${kafka.properties.ssl.enabled.protocols:}")
     private String sslEnabledProtocol;
     @Value("${kafka.properties.ssl.endpoint.identification.algorithm:https}")
@@ -94,8 +92,8 @@ public class DefaultKafkaProducerConfig<T> {
     private String saslRequired;
 
     @Bean
-    public ProducerFactory<String, T> producerFactory() {
-        log.info("Default Kafka Config");
+    public ProducerFactory<String, T> producerFactoryForAvro() {
+        log.info("Default Kafka Config For Avro");
         Map<String, Object> properties = new HashMap<>();
         properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -104,7 +102,8 @@ public class DefaultKafkaProducerConfig<T> {
         properties.put(ProducerConfig.BATCH_SIZE_CONFIG, producerBatchSize);
         properties.put(ProducerConfig.SEND_BUFFER_CONFIG, producerSendBuffer);
         properties.put(ProducerConfig.ACKS_CONFIG, producerAcksConfig);
-        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, valueSerializer);
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                io.confluent.kafka.serializers.KafkaAvroSerializer.class);
         properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
         properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
         properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, maxRequestSize);
@@ -119,8 +118,37 @@ public class DefaultKafkaProducerConfig<T> {
     }
 
     @Bean
-    public KafkaTemplate<String, T> kafkaTemplate() {
-        return new KafkaTemplate<>(producerFactory());
+    public ProducerFactory<String, T> producerFactoryForJson() {
+        log.info("Default Kafka Config");
+        Map<String, Object> properties = new HashMap<>();
+        properties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        properties.put(ProducerConfig.LINGER_MS_CONFIG, producerLinger);
+        properties.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, producerRequestTimeoutMs);
+        properties.put(ProducerConfig.BATCH_SIZE_CONFIG, producerBatchSize);
+        properties.put(ProducerConfig.SEND_BUFFER_CONFIG, producerSendBuffer);
+        properties.put(ProducerConfig.ACKS_CONFIG, producerAcksConfig);
+        properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        properties.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
+        properties.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
+        properties.put(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, maxRequestSize);
+        addSecurityProperties(properties, saslMechanism, securityProtocol, loginModule);
+        addTruststoreProperties(properties);
+        DefaultKafkaProducerFactory<String, T> producerFactory = new DefaultKafkaProducerFactory<>(properties);
+        producerFactory.addListener(new MicrometerProducerListener<>(Metrics.globalRegistry,
+                Collections.singletonList(new ImmutableTag("customTag", "producer-library-metrics"))));
+
+        return producerFactory;
+    }
+
+    @Bean
+    public KafkaTemplate<String, T> kafkaTemplateAvro() {
+        return new KafkaTemplate<>(producerFactoryForAvro());
+    }
+
+    @Bean
+    public KafkaTemplate<String, T> kafkaTemplateJson() {
+        return new KafkaTemplate<>(producerFactoryForJson());
     }
 
     private void addSecurityProperties(Map<String, Object> properties, String saslMechanism, String securityProtocol,

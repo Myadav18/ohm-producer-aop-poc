@@ -8,6 +8,8 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServe
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator;
+import org.apache.avro.Schema;
+import org.apache.avro.reflect.ReflectData;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.header.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +30,10 @@ import java.util.Objects;
 public class MessagePublisherUtil<T> {
 
     @Autowired
-    private KafkaTemplate<String, T> kafkaTemplate;
+    private KafkaTemplate<String, T> kafkaTemplateAvro;
+
+    @Autowired
+    private KafkaTemplate<String, T> kafkaTemplateJson;
 
     @Autowired
     private ConfigValidator<T> configValidator;
@@ -45,7 +50,8 @@ public class MessagePublisherUtil<T> {
     public void publishOnTopic(ProducerRecord<String, T> producerRecord, Map<String, Object> kafkaHeader) {
         try {
             addHeaders(producerRecord.headers(), kafkaHeader);
-            ListenableFuture<SendResult<String, T>> future = kafkaTemplate.send(producerRecord);
+            Schema schema = ReflectData.get().getSchema(producerRecord.value().getClass());
+            ListenableFuture<SendResult<String, T>> future = getKafkaTemplate(schema).send(producerRecord);
             future.addCallback(new ListenableFutureCallback<>() {
                 @Override
                 public void onSuccess(SendResult<String, T> result) {
@@ -72,7 +78,7 @@ public class MessagePublisherUtil<T> {
      * @param e  - Runtime exception from main method
      * @param message - payload
      * @param kafkaHeader - Kafka headers map
-     * 
+     *
      * @throws TopicNameValidationException - for missing topic name
      * @throws PayloadValidationException - for null payload
      * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
@@ -134,7 +140,7 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method adds headers to the producerRecord.
-     * 
+     *
      * @param headers - Producer record header
      * @param kafkaHeader - Kafka headers map from input
      */
@@ -169,7 +175,7 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method will send the message to retry topic
-     * 
+     *
      * @param message - payload
      * @param kafkaHeader - kafka headers map
      * @param topics - Topics map
@@ -196,7 +202,7 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method will send the message to Dlt topic
-     * 
+     *
      * @param message - payload
      * @param kafkaHeader - kafka headers map
      * @param dltTopic - Dead letter topic name
@@ -220,7 +226,7 @@ public class MessagePublisherUtil<T> {
 
     /**
      * Method to post message on DLT
-     * 
+     *
      * @param message - payload
      * @param kafkaHeader - kafka headers map
      * @param dltTopic - Dead letter topic name
@@ -234,6 +240,13 @@ public class MessagePublisherUtil<T> {
             log.error("Exception while posting to DLT: {} ", dltTopic, ex);
             throw ex;
         }
+    }
+
+    KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
+        if (schema.getName().equalsIgnoreCase("String"))
+            return kafkaTemplateJson;
+        else
+            return kafkaTemplateAvro;
     }
 
 }
