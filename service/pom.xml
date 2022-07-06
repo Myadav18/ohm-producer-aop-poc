@@ -6,10 +6,10 @@
   <parent>
     <groupId>net.apmoller.crb.ohm.microservices.producer.library</groupId>
     <artifactId>parent</artifactId>
-    <version>3.0.0</version>
+    <version>2.0.2</version>
   </parent>
   <artifactId>producer-library-service</artifactId>
-  <version>3.0.0</version>
+  <version>2.0.2</version>
   <name>Online producer-library-service Service - Service</name>
   <description>producer-library-service service as a microservice for online</description>
   <properties>
@@ -65,7 +65,7 @@
         <scope>test</scope>
       </dependency>
 
-      <dependency>
+      <!--<dependency>
         <groupId>com.azure.spring</groupId>
         <artifactId>spring-cloud-azure-starter-storage-blob</artifactId>
         <version>4.2.0</version>
@@ -74,7 +74,7 @@
         <groupId>com.azure.spring</groupId>
         <artifactId>azure-spring-boot-starter-storage</artifactId>
         <version>3.13.0</version>
-      </dependency>
+      </dependency>-->
     </dependencies>
 
   <build>

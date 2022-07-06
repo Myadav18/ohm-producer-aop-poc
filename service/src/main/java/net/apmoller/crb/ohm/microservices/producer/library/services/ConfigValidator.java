@@ -7,12 +7,9 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaHeade
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
-import org.apache.kafka.common.errors.TimeoutException;
-import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionTimedOutException;
 
 import java.util.Map;
 import java.util.Objects;
@@ -65,15 +62,6 @@ public class ConfigValidator<T> {
     public boolean claimsCheckTopicIsPresent(String claimsCheckTopic) {
         return ((Objects.nonNull(claimsCheckTopic)) && !(claimsCheckTopic.isEmpty())
                 && !(claimsCheckTopic.startsWith("${")));
-    }
-
-    /**
-     * Method checks if retry topic is Valid.
-     *
-     * @param retryTopic - retry topic name from config
-     */
-    public boolean retryTopicIsPresent(String retryTopic) {
-        return ((Objects.nonNull(retryTopic)) && !(retryTopic.isEmpty()) && !(retryTopic.startsWith("${")));
     }
 
     /**
@@ -135,17 +123,6 @@ public class ConfigValidator<T> {
     }
 
     /**
-     * Method checks if input map contains retry topic name
-     *
-     * @param topics - Topics name map from input
-     */
-    public boolean retryTopicPresent(Map<String, String> topics) {
-        return topics.containsKey(ConfigConstants.RETRY_TOPIC_KEY)
-                && (Objects.nonNull(topics.get(ConfigConstants.RETRY_TOPIC_KEY)))
-                && !((topics.get(ConfigConstants.RETRY_TOPIC_KEY)).isEmpty());
-    }
-
-    /**
      * Method checks if input map contains dead letter topic name
      * @param topics - Topics name map from input
      */
@@ -163,28 +140,5 @@ public class ConfigValidator<T> {
     public boolean isInputValidationException(RuntimeException ex) {
         return ((ex instanceof KafkaServerNotFoundException) || (ex instanceof TopicNameValidationException)
                 || (ex instanceof PayloadValidationException) || (ex instanceof KafkaHeaderValidationException));
-    }
-
-    /**
-     * Method validates if the Runtime exception is retriable and retry topic present
-     * @param ex - Runtime exception
-     * @param topics - map containing topic names
-     */
-    public boolean sendToRetryTopic(Map<String, String> topics, RuntimeException ex) {
-        return retryTopicPresent(topics)
-                && ((ex instanceof TransactionTimedOutException) || (ex instanceof TimeoutException)
-                        || (Objects.nonNull(ex.getCause()) && (ex.getCause() instanceof TopicAuthorizationException)));
-    }
-
-    /**
-     * Method validates if the Runtime exception is retriable and retry topic present
-     * 
-     * @param ex - Runtime exception
-     * @param retryTopic - retry topic from config
-     */
-    public boolean sendToRetryTopic(String retryTopic, RuntimeException ex) {
-        return retryTopicIsPresent(retryTopic)
-                && ((ex instanceof TransactionTimedOutException) || (ex instanceof TimeoutException)
-                        || (Objects.nonNull(ex.getCause()) && (ex.getCause() instanceof TopicAuthorizationException)));
     }
 }

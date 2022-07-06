@@ -68,7 +68,8 @@ public class MessagePublisherUtilTest<T> {
 
     Map<String, Object> kafkaHeader;
 
-    private final TransactionTimedOutException tte = new TransactionTimedOutException("test exception");
+    private TimeoutException timeoutException = new TimeoutException("timeout");
+    private TransactionTimedOutException tte = new TransactionTimedOutException("timeout");
 
     @BeforeEach
     void setUp() {
@@ -118,32 +119,6 @@ public class MessagePublisherUtilTest<T> {
     }
 
     @Test
-    void testExceptionWhilePostingToRetry() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        TimeoutException timeoutException = new TimeoutException();
-        Assertions.assertThrows(TimeoutException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(timeoutException, topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testHeaderValidationExceptionWhilePostingToRetry() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        KafkaHeaderValidationException ex = new KafkaHeaderValidationException(
-                ConfigConstants.INVALID_KAFKA_HEADER_MAP_ERROR_MSG);
-        var throwable = assertThrows(KafkaHeaderValidationException.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(ex, topicMap, (T) payload, null));
-        Assertions.assertEquals(ConfigConstants.INVALID_KAFKA_HEADER_MAP_ERROR_MSG, throwable.getMessage());
-    }
-
-    @Test
     void testHeaderValidationExceptionWhenHeaderValueNull() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
@@ -153,55 +128,18 @@ public class MessagePublisherUtilTest<T> {
         KafkaHeaderValidationException ex = new KafkaHeaderValidationException(
                 ConfigConstants.INVALID_KAFKA_HEADER_VALUE_ERROR_MSG);
         assertThrows(KafkaHeaderValidationException.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(ex, topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testExceptionWhilePostingToDlt() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        NullPointerException nullPointerException = new NullPointerException();
-        Assertions.assertThrows(NullPointerException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(nullPointerException, topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testKafkaServerNotFoundException() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        KafkaServerNotFoundException kafkaServerNotFoundException = new KafkaServerNotFoundException(
-                ConfigConstants.INVALID_BOOTSTRAP_SERVER_ERROR_MSG);
-        assertThrows(KafkaServerNotFoundException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(kafkaServerNotFoundException, topicMap, (T) payload, kafkaHeader));
+                () -> messagePublisherUtil.produceMessageToDlt(ex, topicMap, (T) payload, kafkaHeader));
     }
 
     @Test
     void testInvalidTopicNameExceptionWhilePostingToMainTopic() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
         TopicNameValidationException tnve = new TopicNameValidationException(
                 ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         assertThrows(TopicNameValidationException.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(tnve, topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testTransactionTimedOutException() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        when(configValidator.retryTopicPresent(anyMap())).thenReturn(Boolean.TRUE);
-        assertThrows(TransactionTimedOutException.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(tte, topicMap, (T) payload, kafkaHeader));
+                () -> messagePublisherUtil.produceMessageToDlt(tnve, topicMap, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -224,9 +162,8 @@ public class MessagePublisherUtilTest<T> {
             assertEquals(sendResult.getRecordMetadata().partition(), partition);
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
         when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        messagePublisherUtil.produceMessageToRetryOrDlt(new TimeoutException(""), topicMap, (T) payload, kafkaHeader);
+        messagePublisherUtil.produceMessageToDlt(timeoutException, topicMap, (T) payload, kafkaHeader);
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
 
@@ -237,9 +174,7 @@ public class MessagePublisherUtilTest<T> {
         long offset = 1L;
         int partition = 2;
         String producerTopic = "test";
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        when(configValidator.retryTopicPresent(anyMap())).thenReturn(Boolean.TRUE);
         when(configValidator.dltTopicPresent(anyMap())).thenReturn(Boolean.TRUE);
         Throwable ex = mock(Throwable.class);
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
@@ -252,19 +187,7 @@ public class MessagePublisherUtilTest<T> {
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
         assertThrows(Throwable.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(tte, topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testRetryWhenRetryTopicValidationFailed() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        String producerTopic = "test";
-        when(configValidator.sendToRetryTopic(topicMap, new TimeoutException())).thenReturn(Boolean.FALSE);
-        assertThrows(TimeoutException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(new TimeoutException(""), topicMap, (T) payload, kafkaHeader));
+                () -> messagePublisherUtil.produceMessageToDlt(tte, topicMap, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -272,7 +195,7 @@ public class MessagePublisherUtilTest<T> {
         String payload = "test";
         when(configValidator.dltTopicIsPresent(anyString())).thenReturn(Boolean.FALSE);
         assertThrows(TransactionTimedOutException.class,
-                () -> messagePublisherUtil.publishToDltTopic((T) payload, null, "dltTestTopic", tte));
+                () -> messagePublisherUtil.produceMessageToDlt(tte, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -280,28 +203,7 @@ public class MessagePublisherUtilTest<T> {
         String payload = "test";
         when(configValidator.dltTopicIsPresent(anyString())).thenReturn(Boolean.FALSE);
         assertThrows(TransactionTimedOutException.class,
-                () -> messagePublisherUtil.publishToRetryTopic((T) payload, null, "retryTestTopic", "dltTopic", tte));
-    }
-
-    @Test
-    void testSingleProducerRetrySuccessCase() {
-        String payload = "test";
-        String producerTopic = "test";
-        long offset = 1L;
-        int partition = 2;
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
-        RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
-                0L, 0, 0);
-        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
-        doAnswer(invocationOnMock -> {
-            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
-            listenableFutureCallback.onSuccess(sendResult);
-            assertEquals(sendResult.getRecordMetadata().offset(), offset);
-            assertEquals(sendResult.getRecordMetadata().partition(), partition);
-            return null;
-        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.publishToRetryTopic((T) payload, kafkaHeader, "retryTopic", "dltTopic", tte);
-        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+                () -> messagePublisherUtil.produceMessageToDlt(tte, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -311,7 +213,6 @@ public class MessagePublisherUtilTest<T> {
         String producerTopic = "test";
         long offset = 1L;
         int partition = 2;
-        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) "payload");
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
                 0L, 0, 0);
@@ -323,19 +224,18 @@ public class MessagePublisherUtilTest<T> {
             assertEquals(sendResult.getRecordMetadata().partition(), partition);
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.publishToDltTopic((T) payload, kafkaHeader, "dltTestTopic", tte);
+        messagePublisherUtil.produceMessageToDlt(tte, (T) payload, kafkaHeader);
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }
 
     @Test
     void testSingleProducerDltFailureCase() {
         String payload = "test";
-        when(configValidator.dltTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
         String producerTopic = "test";
         long offset = 1L;
         int partition = 2;
-        ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, (T) "payload");
         Throwable ex = mock(Throwable.class);
+        when(configValidator.dltTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(new TopicPartition(producerTopic, partition), offset, 0L, 0L,
                 0L, 0, 0);
@@ -345,8 +245,7 @@ public class MessagePublisherUtilTest<T> {
             listenableFutureCallback.onFailure(ex);
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        assertThrows(Throwable.class,
-                () -> messagePublisherUtil.publishToDltTopic((T) payload, kafkaHeader, "dltTestTopic", tte));
+        assertThrows(Throwable.class, () -> messagePublisherUtil.produceMessageToDlt(tte, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -356,77 +255,7 @@ public class MessagePublisherUtilTest<T> {
         TransactionTimedOutException tte = new TransactionTimedOutException("");
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RecordTooLargeException.class);
         assertThrows(RecordTooLargeException.class,
-                () -> messagePublisherUtil.publishToDltTopic((T) payload, kafkaHeader, "dltTestTopic", tte));
-    }
-
-    @Test
-    void testPostingOnRetryWhenTopicAuthorizationException() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        long offset = 1L;
-        int partition = 2;
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
-        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition(topicMap.get(ConfigConstants.RETRY_TOPIC_KEY), partition), offset, 0L, 0L, 0L, 0, 0);
-        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
-        doAnswer(invocationOnMock -> {
-            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
-            listenableFutureCallback.onSuccess(sendResult);
-            assertEquals(sendResult.getRecordMetadata().offset(), offset);
-            assertEquals(sendResult.getRecordMetadata().partition(), partition);
-            return null;
-        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.publishMessageToRetryTopic((T) payload, kafkaHeader,
-                new KafkaException(topicAuthorizationException), topicMap);
-        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
-    }
-
-    @Test
-    void testPostingOnDLTWhenTopicAuthorizationException() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        long offset = 1L;
-        int partition = 2;
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
-        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
-        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition(topicMap.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY), partition), offset, 0L, 0L, 0L,
-                0, 0);
-        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
-        doAnswer(invocationOnMock -> {
-            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
-            listenableFutureCallback.onSuccess(sendResult);
-            assertEquals(sendResult.getRecordMetadata().offset(), offset);
-            assertEquals(sendResult.getRecordMetadata().partition(), partition);
-            return null;
-        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException), topicMap,
-                (T) payload, kafkaHeader);
-        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
-    }
-
-    @Test
-    void testExceptionPostingOnDLTWhenTopicAuthorizationException() {
-        Map<String, String> topicMap = new HashMap<>();
-        String payload = "test";
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
-        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RuntimeException.class);
-        TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
-        assertThrows(RuntimeException.class,
-                () -> messagePublisherUtil.produceMessageToRetryOrDlt(new KafkaException(topicAuthorizationException),
-                        topicMap, (T) payload, kafkaHeader));
-        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+                () -> messagePublisherUtil.produceMessageToDlt(tte, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -435,113 +264,34 @@ public class MessagePublisherUtilTest<T> {
         String payload = "test";
         TopicAuthorizationException topicAuthorizationException = new TopicAuthorizationException("test");
         KafkaException kafkaException = new KafkaException(topicAuthorizationException);
-        when(configValidator.retryTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
         when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
-        assertThrows(KafkaException.class, () -> messagePublisherUtil.produceMessageToRetryOrDlt(kafkaException,
-                topicMap, (T) payload, kafkaHeader));
+        assertThrows(KafkaException.class,
+                () -> messagePublisherUtil.produceMessageToDlt(kafkaException, topicMap, (T) payload, kafkaHeader));
         verify(kafkaTemplate, times(0)).send(any(ProducerRecord.class));
     }
 
     @Test
-    void testMultipleProducerFailureToPostingOnRetryOrDLTWhenInputValidationException() {
+    void testMultipleProducerFailureToPostingOnDLTWhenInputValidationException() {
         Map<String, String> topicMap = new HashMap<>();
         String payload = "test";
         TopicNameValidationException topicNameValidationException = new TopicNameValidationException(
                 ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
         when(configValidator.isInputValidationException(topicNameValidationException)).thenReturn(Boolean.TRUE);
         assertThrows(TopicNameValidationException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(topicNameValidationException, topicMap, (T) payload, kafkaHeader));
+                .produceMessageToDlt(topicNameValidationException, topicMap, (T) payload, kafkaHeader));
     }
 
     @Test
-    void testSingleProducerFailureToPostingOnRetryOrDLTWhenInputValidationException() {
-        String payload = "test";
-        TopicNameValidationException topicNameValidationException = new TopicNameValidationException(
-                ConfigConstants.INVALID_NOTIFICATION_TOPIC_ERROR_MSG);
-        when(configValidator.isInputValidationException(topicNameValidationException)).thenReturn(Boolean.TRUE);
-        assertThrows(TopicNameValidationException.class,
-                () -> messagePublisherUtil.produceToRetryOrDlt(topicNameValidationException, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void testMultipleProducerFailureToPostingOnRetryOrDLTWhenKafkaHeaderNotPresent() {
+    void tesExceptionWhilePostingOnDLT() {
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        String payload = "test";
-        Map<String, Object> headerMap = new HashMap<>();
-        headerMap.put("X-Correlation-Id", null);
-        TimeoutException timeoutException = new TimeoutException("test exception");
-        when(configValidator.sendToRetryTopic(topicMap, timeoutException)).thenReturn(Boolean.TRUE);
-        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        assertThrows(KafkaHeaderValidationException.class, () -> messagePublisherUtil
-                .produceMessageToRetryOrDlt(timeoutException, topicMap, (T) payload, headerMap));
-    }
-
-    @Test
-    void tesExceptionWhilePostingOnRetryOrDLT() {
-        Map<String, String> topicMap = new HashMap<>();
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        String payload = "test";
-        TimeoutException timeoutException = new TimeoutException("test exception");
-        when(configValidator.sendToRetryTopic(topicMap, timeoutException)).thenReturn(Boolean.TRUE);
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RuntimeException.class);
-        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
-        assertThrows(RuntimeException.class, () -> messagePublisherUtil.produceMessageToRetryOrDlt(timeoutException,
-                topicMap, (T) payload, kafkaHeader));
-    }
-
-    @Test
-    void tesExceptionWhenPublishingToRetryTopicForMultipleProducer() {
-        Map<String, String> topicMap = new HashMap<>();
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        String payload = "test";
-        Map<String, Object> headerMap = new HashMap<>();
-        headerMap.put("X-Correlation-Id", null);
-        TimeoutException timeoutException = new TimeoutException("test exception");
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RuntimeException.class);
-        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.FALSE);
-        assertThrows(RuntimeException.class, () -> messagePublisherUtil.publishMessageToRetryTopic((T) payload,
-                kafkaHeader, timeoutException, topicMap));
-    }
-
-    @Test
-    void tesExceptionWhenPublishingToRetryTopicForSingleProducer() {
         String payload = "test";
         TimeoutException timeoutException = new TimeoutException("test exception");
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenThrow(RuntimeException.class);
-        when(configValidator.dltTopicIsPresent("dlt")).thenReturn(Boolean.FALSE);
-        assertThrows(RuntimeException.class, () -> messagePublisherUtil.publishToRetryTopic((T) payload, kafkaHeader,
-                "retry", "dlt", timeoutException));
-    }
-
-    @Test
-    void testSuccessfulPostingToRetryTopic() {
-        String payload = "test";
-        long offset = 1L;
-        int partition = 2;
-        Map<String, String> topicMap = new HashMap<>();
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        TimeoutException timeoutException = new TimeoutException("test exception");
-        when(configValidator.sendToRetryTopic(topicMap, timeoutException)).thenReturn(Boolean.TRUE);
-        when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
-        RecordMetadata recordMetadata = new RecordMetadata(
-                new TopicPartition(topicMap.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY), partition), offset, 0L, 0L, 0L,
-                0, 0);
-        given(sendResult.getRecordMetadata()).willReturn(recordMetadata);
-        doAnswer(invocationOnMock -> {
-            ListenableFutureCallback listenableFutureCallback = invocationOnMock.getArgument(0);
-            listenableFutureCallback.onSuccess(sendResult);
-            assertEquals(sendResult.getRecordMetadata().offset(), offset);
-            assertEquals(sendResult.getRecordMetadata().partition(), partition);
-            return null;
-        }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.produceMessageToRetryOrDlt(timeoutException, topicMap, (T) payload, kafkaHeader);
-        verify(configValidator, times(1)).sendToRetryTopic(topicMap, timeoutException);
-        verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
+        when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
+        assertThrows(RuntimeException.class,
+                () -> messagePublisherUtil.produceMessageToDlt(timeoutException, topicMap, (T) payload, kafkaHeader));
     }
 
     @Test
@@ -553,7 +303,6 @@ public class MessagePublisherUtilTest<T> {
         topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
         topicMap.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
         TimeoutException timeoutException = new TimeoutException("test exception");
-        when(configValidator.sendToRetryTopic(topicMap, timeoutException)).thenReturn(Boolean.FALSE);
         when(configValidator.dltTopicPresent(topicMap)).thenReturn(Boolean.TRUE);
         when(kafkaTemplate.send(any(ProducerRecord.class))).thenReturn(responseFuture);
         RecordMetadata recordMetadata = new RecordMetadata(
@@ -567,8 +316,7 @@ public class MessagePublisherUtilTest<T> {
             assertEquals(sendResult.getRecordMetadata().partition(), partition);
             return null;
         }).when(responseFuture).addCallback(any(ListenableFutureCallback.class));
-        messagePublisherUtil.produceMessageToRetryOrDlt(timeoutException, topicMap, (T) payload, kafkaHeader);
-        verify(configValidator, times(1)).sendToRetryTopic(topicMap, timeoutException);
+        messagePublisherUtil.produceMessageToDlt(timeoutException, topicMap, (T) payload, kafkaHeader);
         verify(configValidator, times(1)).dltTopicPresent(topicMap);
         verify(kafkaTemplate, times(1)).send(any(ProducerRecord.class));
     }

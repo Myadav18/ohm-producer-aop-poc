@@ -5,9 +5,7 @@ import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaHeade
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
-import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.errors.TimeoutException;
-import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +14,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.TransactionTimedOutException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -75,15 +72,6 @@ public class ConfigValidatorTest<T> {
     }
 
     @Test
-    void testInvalidTopicForMultipleProducerWhenRetryTopicNotPresent() {
-        Map<String, String> topicMap = new HashMap<>();
-        topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
-        topicMap.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        var retryTopicPresent = validator.retryTopicPresent(topicMap);
-        assertTrue(retryTopicPresent);
-    }
-
-    @Test
     void testInvalidTopicForMultipleProducerWhenDltNotPresent() {
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");
@@ -105,24 +93,14 @@ public class ConfigValidatorTest<T> {
     }
 
     @Test
-    void testRetryTopicIsPresent() {
-        String retryTopic = "retryTopic";
-        assertEquals(Boolean.TRUE, validator.retryTopicIsPresent(retryTopic));
-    }
-
-    @Test
     void testClaimsCheckTopicIsPresent() {
         String retryTopic = "claimsCheck";
         assertEquals(Boolean.TRUE, validator.claimsCheckTopicIsPresent(retryTopic));
     }
+
     @Test
     void testClaimsCheckTopicIsNotPresent() {
         assertEquals(Boolean.FALSE, validator.claimsCheckTopicIsPresent(""));
-    }
-
-    @Test
-    void testRetryTopicIsNotPresent() {
-        assertEquals(Boolean.FALSE, validator.retryTopicIsPresent(""));
     }
 
     @Test
@@ -172,66 +150,6 @@ public class ConfigValidatorTest<T> {
     }
 
     @Test
-    void testConditionForPostingToRetryTopicForMultipleProducerWhenTimeOutException() {
-        Map<String, String> topics = new HashMap<>();
-        topics.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        assertTrue(validator.sendToRetryTopic(topics, new TimeoutException("test")));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicForMultipleProducerWhenTransactionTimeOutException() {
-        Map<String, String> topics = new HashMap<>();
-        topics.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        assertTrue(validator.sendToRetryTopic(topics, new TransactionTimedOutException("test")));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicForMultipleProducerWhenTopicAuthorizationException() {
-        Map<String, String> topics = new HashMap<>();
-        topics.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        assertTrue(validator.sendToRetryTopic(topics, new KafkaException(new TopicAuthorizationException("test"))));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicForMultipleProducerWhenKafkaException() {
-        Map<String, String> topics = new HashMap<>();
-        topics.put(ConfigConstants.RETRY_TOPIC_KEY, "retry");
-        assertFalse(validator.sendToRetryTopic(topics, new KafkaException()));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicForMultipleProducerWhenTopicNotPresentInInput() {
-        Map<String, String> topics = new HashMap<>();
-        topics.put(ConfigConstants.DEAD_LETTER_TOPIC_KEY, "dlt");
-        assertFalse(validator.sendToRetryTopic(topics, new TimeoutException("test")));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicWhenTimeOutException() {
-        assertTrue(validator.sendToRetryTopic("retry", new TimeoutException("test")));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicWhenTransactionTimeOutException() {
-        assertTrue(validator.sendToRetryTopic("retry", new TransactionTimedOutException("test")));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicWhenTopicAuthorizationException() {
-        assertTrue(validator.sendToRetryTopic("retry", new KafkaException(new TopicAuthorizationException("test"))));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicWhenKafkaException() {
-        assertFalse(validator.sendToRetryTopic("retry", new KafkaException()));
-    }
-
-    @Test
-    void testConditionForPostingToRetryTopicWhenTopicNameNull() {
-        assertFalse(validator.sendToRetryTopic("", new TimeoutException()));
-    }
-
-    @Test
     void testDltValidationWhenNullValuePassed() {
         assertFalse(validator.dltTopicIsPresent(null));
     }
@@ -244,16 +162,6 @@ public class ConfigValidatorTest<T> {
     @Test
     void testDltValidationWhenConfigNotAdded() {
         assertFalse(validator.dltTopicIsPresent(ConfigConstants.DLT));
-    }
-
-    @Test
-    void testRetryTopicValidationWhenNullValuePassed() {
-        assertFalse(validator.retryTopicIsPresent(null));
-    }
-
-    @Test
-    void testRetryTopicValidationWhenEmptyValuePassed() {
-        assertFalse(validator.retryTopicIsPresent(""));
     }
 
     @Test

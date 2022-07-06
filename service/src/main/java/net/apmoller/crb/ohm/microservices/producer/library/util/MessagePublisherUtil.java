@@ -3,10 +3,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.util;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaHeaderValidationException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.PayloadValidationException;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator;
 import org.apache.avro.Schema;
 import org.apache.avro.reflect.ReflectData;
@@ -55,8 +52,8 @@ public class MessagePublisherUtil<T> {
             future.addCallback(new ListenableFutureCallback<>() {
                 @Override
                 public void onSuccess(SendResult<String, T> result) {
-                    log.info("Sent message to kafka topic:[{}] with offset=[{}]", producerRecord.topic(),
-                            result.getRecordMetadata().offset());
+                    log.info("Sent message to kafka topic:[{}] on partition:[{}] with offset=[{}]",
+                            producerRecord.topic(), result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
                 }
 
                 @SneakyThrows
@@ -68,72 +65,6 @@ public class MessagePublisherUtil<T> {
             });
         } catch (Exception ex) {
             log.error("Exception occurred while pushing message ", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * Method to publish on Retry or Dead letter topic
-     *
-     * @param e  - Runtime exception from main method
-     * @param message - payload
-     * @param kafkaHeader - Kafka headers map
-     *
-     * @throws TopicNameValidationException - for missing topic name
-     * @throws PayloadValidationException - for null payload
-     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
-     * @throws KafkaHeaderValidationException - for missing kafka headers
-     */
-    public void produceToRetryOrDlt(RuntimeException e, T message, Map<String, Object> kafkaHeader)
-            throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException,
-            KafkaHeaderValidationException {
-        if (configValidator.isInputValidationException(e)) {
-            log.info("Throwing validation exception: {}", e.getClass().getName());
-            throw e;
-        }
-        try {
-            var retryTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.RETRY_TOPIC);
-            var dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
-            if (configValidator.sendToRetryTopic(retryTopic, e)) {
-                publishToRetryTopic(message, kafkaHeader, retryTopic, dltTopic, e);
-            } else {
-                publishToDltTopic(message, kafkaHeader, dltTopic, e);
-            }
-        } catch (Exception ex) {
-            log.error("Exception Occurred while Posting to Retry or DLT Topic", ex);
-            throw ex;
-        }
-    }
-
-    /**
-     * Method return retry topic/DLT name.
-     *
-     * @param e - runtime exception from the main method
-     * @param topics - map containing topic names from input
-     * @param message - payload
-     * @param kafkaHeader - Kafka headers map from input
-     * @throws TopicNameValidationException - for missing topic name
-     * @throws PayloadValidationException - for null payload
-     * @throws KafkaServerNotFoundException - for missing kafka bootstrap server
-     * @throws KafkaHeaderValidationException - for missing kafka headers
-     */
-    public void produceMessageToRetryOrDlt(RuntimeException e, Map<String, String> topics, T message,
-            Map<String, Object> kafkaHeader) throws KafkaServerNotFoundException, TopicNameValidationException,
-            PayloadValidationException, KafkaHeaderValidationException {
-        if (configValidator.isInputValidationException(e)) {
-            log.info("Throwing validation exception: {}", e.getClass().getName());
-            throw e;
-        }
-        try {
-            if (configValidator.sendToRetryTopic(topics, e)) {
-                publishMessageToRetryTopic(message, kafkaHeader, e, topics);
-            } else if (configValidator.dltTopicPresent(topics)) {
-                var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
-                publishMessageToDltTopic(message, kafkaHeader, dltTopic);
-            } else
-                throw e;
-        } catch (Exception ex) {
-            log.error("Exception Occurred in produceMessageToRetryOrDlt :", ex);
             throw ex;
         }
     }
@@ -155,98 +86,64 @@ public class MessagePublisherUtil<T> {
     }
 
     /**
-     * Method will send message to Retry Topic
-     *
-     * @param message - payload
-     * @param kafkaHeader - Kafka headers map
-     * @param retryTopic - retry topic name
+     * Method returns KafkaTemplate object based on payload schema.
      */
-    public void publishToRetryTopic(T message, Map<String, Object> kafkaHeader, String retryTopic, String dltTopic,
-            RuntimeException e) {
-        try {
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(retryTopic, message);
-            publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Successfully published message to kafka retry topic: {}", retryTopic);
-        } catch (Exception ex) {
-            log.error("Exception while posting message to retry topic: {}", retryTopic, ex);
-            publishToDltTopic(message, kafkaHeader, dltTopic, e);
-        }
+    KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
+        return schema.getName().equalsIgnoreCase("String") ? kafkaTemplateJson : kafkaTemplateAvro;
     }
 
     /**
-     * Method will send the message to retry topic
-     *
-     * @param message - payload
-     * @param kafkaHeader - kafka headers map
-     * @param topics - Topics map
-     * @param e - Runtime exception from main method
+     * Method to publish the Message on DLT Topic for single producer flow.
      */
-    public void publishMessageToRetryTopic(T message, Map<String, Object> kafkaHeader, RuntimeException e,
-            Map<String, String> topics) {
-        var retryTopic = topics.get(ConfigConstants.RETRY_TOPIC_KEY);
-        try {
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(retryTopic, message);
-            publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Successfully published message to kafka retry topic: {}", retryTopic);
-        } catch (Exception ex) {
-            log.error("Exception while posting to retry topic: {}", retryTopic, ex);
-            if (configValidator.dltTopicPresent(topics)) {
-                var dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
-                publishMessageToDltTopic(message, kafkaHeader, dltTopic);
-            } else {
-                log.info("Dead letter topic not present in input map");
-                throw e;
-            }
+    public void produceMessageToDlt(RuntimeException e, T message, Map<String, Object> kafkaHeader)
+            throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException,
+            KafkaHeaderValidationException {
+        String dltTopic = null;
+        if (configValidator.isInputValidationException(e)) {
+            log.info("Throwing validation exception: {}", e.getClass().getName());
+            throw e;
         }
-    }
-
-    /**
-     * Method will send the message to Dlt topic
-     *
-     * @param message - payload
-     * @param kafkaHeader - kafka headers map
-     * @param dltTopic - Dead letter topic name
-     * @param e - Runtime exception from main method
-     */
-    public void publishToDltTopic(T message, Map<String, Object> kafkaHeader, String dltTopic, RuntimeException e) {
         try {
+            dltTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.DLT);
             if (configValidator.dltTopicIsPresent(dltTopic)) {
                 ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
                 publishOnTopic(producerRecord, kafkaHeader);
-                log.info("Publish message to kafka Dead letter topic: {}", dltTopic);
+                log.info("Published message to dead letter topic: {}", dltTopic);
             } else {
                 log.info("DLT not added in config");
                 throw e;
             }
         } catch (Exception ex) {
-            log.error("Exception while posting to DLT: {}", dltTopic, ex);
+            log.error("Exception Occurred while posting to DLT");
             throw ex;
         }
     }
 
     /**
-     * Method to post message on DLT
-     *
-     * @param message - payload
-     * @param kafkaHeader - kafka headers map
-     * @param dltTopic - Dead letter topic name
+     * Method to publish the Message on DLT Topic for multiple producer flow.
      */
-    public void publishMessageToDltTopic(T message, Map<String, Object> kafkaHeader, String dltTopic) {
+    public void produceMessageToDlt(RuntimeException e, Map<String, String> topics, T message,
+            Map<String, Object> kafkaHeader) throws KafkaServerNotFoundException, TopicNameValidationException,
+            PayloadValidationException, KafkaHeaderValidationException {
+        String dltTopic = null;
+        if (configValidator.isInputValidationException(e)) {
+            log.info("Throwing validation exception: {}", e.getClass().getName());
+            throw e;
+        }
         try {
-            ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
-            publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Successfully published message to kafka Dead letter topic: {}", dltTopic);
+            if (configValidator.dltTopicPresent(topics)) {
+                dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
+                ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
+                publishOnTopic(producerRecord, kafkaHeader);
+                log.info("Published message to dead letter topic: {}", dltTopic);
+            } else {
+                log.info("DLT not added in input topic map");
+                throw e;
+            }
         } catch (Exception ex) {
-            log.error("Exception while posting to DLT: {} ", dltTopic, ex);
+            log.error("Exception Occurred while pushing message to dead letter topic");
             throw ex;
         }
-    }
-
-    KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
-        if (schema.getName().equalsIgnoreCase("String"))
-            return kafkaTemplateJson;
-        else
-            return kafkaTemplateAvro;
     }
 
 }

@@ -29,18 +29,17 @@ public class ClaimsCheckServiceImpl<T> {
     @Autowired
     private MessagePublisherUtil<T> messagePublisherUtil;
 
-    @Value(ConfigConstants.AZURE_STORAGE_CONTAINER_NAME)
-    private String CONTAINER_NAME;
-
-    @Value(ConfigConstants.BLOB_ITEM_NAME_PREFIX)
-    private String BLOB_ITEM_NAME_PREFIX;
+    /*
+     * @Value(ConfigConstants.AZURE_STORAGE_CONTAINER_NAME) private String CONTAINER_NAME;
+     * 
+     * @Value(ConfigConstants.BLOB_ITEM_NAME_PREFIX) private String BLOB_ITEM_NAME_PREFIX;
+     */
 
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, String producerTopic, T data)
             throws ClaimsCheckFailedException {
         try {
             long time = System.currentTimeMillis();
-            String url = uploadToAzureBlob(
-                    CompressionUtil.gzipCompress(data));
+            String url = null; // uploadToAzureBlob(CompressionUtil.gzipCompress(data));
             var claimscheckpayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
             log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<String, T>(producerTopic,
@@ -53,13 +52,11 @@ public class ClaimsCheckServiceImpl<T> {
         }
     }
 
-    public String uploadToAzureBlob(byte[] compressedPayload) throws ClaimsCheckFailedException {
-        try {
-            return fileService.uploadFile(compressedPayload, CONTAINER_NAME, BLOB_ITEM_NAME_PREFIX + UUID.randomUUID()
-                    + "_" + TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis()));
-        } catch (Exception e) {
-            log.error("error occured while uploading to azure blob", e);
-            throw new ClaimsCheckFailedException("Claims check failed while doing upload to blob", e);
-        }
-    }
+    /*
+     * public String uploadToAzureBlob(byte[] compressedPayload) throws ClaimsCheckFailedException { try { return
+     * fileService.uploadFile(compressedPayload, CONTAINER_NAME, BLOB_ITEM_NAME_PREFIX + UUID.randomUUID() + "_" +
+     * TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis())); } catch (Exception e) {
+     * log.error("error occured while uploading to azure blob", e); throw new
+     * ClaimsCheckFailedException("Claims check failed while doing upload to blob", e); } }
+     */
 }
