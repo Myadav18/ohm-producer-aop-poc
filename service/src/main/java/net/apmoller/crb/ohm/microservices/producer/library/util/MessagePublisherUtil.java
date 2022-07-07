@@ -242,7 +242,7 @@ public class MessagePublisherUtil<T> {
         }
     }
 
-    KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
+    public KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
         if (schema.getName().equalsIgnoreCase("String"))
             return kafkaTemplateJson;
         else

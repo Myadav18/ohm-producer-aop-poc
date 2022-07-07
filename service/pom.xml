@@ -16,7 +16,7 @@
     <artifactName>producer-library-service</artifactName>
     <com.spotify.version>1.4.9</com.spotify.version>
     <sonar.coverage.exclusions>
-      **/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.java,
+      **/net/apmoller/crb/ohm/microservices/producer/library/ProducerLibraryApplication.java,
       **/net/apmoller/crb/ohm/microservices/producer/library/config/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/models/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/domains/*,
@@ -26,7 +26,8 @@
       **/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*,
       **/net/apmoller/crb/ohm/microservices/producer/library/storage/*,
       **/net/apmoller/crb/ohm/microservices/producer/library/util/CompressionUtil.java*,
-      **net/apmoller/ohm/adapter/avro/model/*
+      **net/apmoller/ohm/adapter/avro/model/*,
+      **net/apmoller/crb/ohm/claimscheck/request/*
     </sonar.coverage.exclusions>
     </properties>
     <dependencies>
@@ -113,7 +114,7 @@
         <version>0.8.4</version>
         <configuration>
           <excludes>
-            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/KafkaproducerApplication.*</exclude>
+            <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/ProducerLibraryApplication.*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/models/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/config/*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/constants/*</exclude>
@@ -122,6 +123,7 @@
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckService.*</exclude>
             <exclude>**/net/apmoller/crb/ohm/microservices/producer/library/services/ClaimsCheckServiceImpl.*</exclude>
             <exclude>**net/apmoller/ohm/adapter/avro/model/*</exclude>
+            <exclude>**net/apmoller/crb/ohm/claimscheck/request/*</exclude>
           </excludes>
           <destFile>${basedir}/target/site/jacoco/jacoco.exec</destFile>
           <dataFile>${basedir}/target/site/jacoco/jacoco.exec</dataFile>
