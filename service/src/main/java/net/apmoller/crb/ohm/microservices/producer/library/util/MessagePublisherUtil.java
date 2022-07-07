@@ -88,7 +88,7 @@ public class MessagePublisherUtil<T> {
     /**
      * Method returns KafkaTemplate object based on payload schema.
      */
-    KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
+    public KafkaTemplate<String, T> getKafkaTemplate(Schema schema) {
         return schema.getName().equalsIgnoreCase("String") ? kafkaTemplateJson : kafkaTemplateAvro;
     }
 
@@ -114,7 +114,7 @@ public class MessagePublisherUtil<T> {
                 throw e;
             }
         } catch (Exception ex) {
-            log.error("Exception Occurred while posting to DLT");
+            log.error("Exception Occurred while posting to DLT: {}", dltTopic);
             throw ex;
         }
     }
