@@ -141,7 +141,7 @@ public class MessagePublisherUtil<T> {
                 throw e;
             }
         } catch (Exception ex) {
-            log.error("Exception Occurred while pushing message to dead letter topic");
+            log.error("Exception while posting to DLT: {} ", dltTopic, ex);
             throw ex;
         }
     }
