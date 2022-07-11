@@ -51,7 +51,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
      */
     @Override
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, Map<String, String> topics,
-                                                         T message) throws ClaimsCheckFailedException {
+                                                         T message) throws ClaimsCheckFailedException, DLTException {
         ProducerRecord<String, T> producerRecord;
         ClaimsCheckRequestPayload claimsCheckPayload = null;
         if (configValidator.claimsCheckTopicNotPresent(topics))
