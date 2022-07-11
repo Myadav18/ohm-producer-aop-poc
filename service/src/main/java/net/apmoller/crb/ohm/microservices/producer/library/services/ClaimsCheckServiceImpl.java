@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -47,47 +46,11 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
     private static final String BLOB_UPLOAD_ERROR_MESSAGE = "Error occurred while uploading to azure blob";
 
     /*
-     * Method to handle claims check for single producer flow
-     */
-    @Override
-    public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, T data)
-            throws ClaimsCheckFailedException, IOException {
-        ProducerRecord<String, T> producerRecord;
-        ClaimsCheckRequestPayload claimsCheckPayload = null;
-        String claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
-        if (configValidator.claimsCheckTopicNotPresent(claimsCheckTopic))
-            throw new ClaimsCheckFailedException("claims check topic not found in config");
-        try {
-            long time = System.currentTimeMillis();
-            String url = uploadToAzureBlob(CompressionUtil.gzipCompress(data));
-            claimsCheckPayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
-            log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
-            producerRecord = new ProducerRecord<>(claimsCheckTopic, (T) claimsCheckPayload);
-            messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Published to Kafka topic post claim check in {} ms", System.currentTimeMillis() - time);
-        } catch (ClaimsCheckFailedException ex) {
-            log.error(BLOB_UPLOAD_ERROR_MESSAGE, ex);
-            throw ex;
-        } catch (Exception e) {
-            log.error("Exception while posting claims check topic ", e);
-            // Send to DLT
-            var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
-            if (configValidator.claimsCheckDltIsPresent(claimsCheckDlt)) {
-                producerRecord = new ProducerRecord<>(claimsCheckDlt, (T) claimsCheckPayload);
-                messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-            } else {
-                log.info("Claims check DLT not added in environment config");
-                throw e;
-            }
-        }
-    }
-
-    /*
-     * Method to handle claims check for multiple producer flow
+     * Method to handle upload to Azure blob storage and posting storage url on claims check topic
      */
     @Override
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, Map<String, String> topics,
-            T message) throws ClaimsCheckFailedException, IOException {
+            T message) throws ClaimsCheckFailedException {
         ProducerRecord<String, T> producerRecord;
         ClaimsCheckRequestPayload claimsCheckPayload = null;
         if (configValidator.claimsCheckTopicNotPresent(topics))
@@ -113,7 +76,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                 messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
             } else {
                 log.info("Claims check DLT not added in input topic map hence throwing exception");
-                throw e;
+                throw new ClaimsCheckFailedException("Dead letter topic not found");
             }
         }
     }

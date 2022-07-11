@@ -95,12 +95,73 @@ public class ConfigValidatorTest<T> {
     @Test
     void testClaimsCheckTopicIsPresent() {
         String retryTopic = "claimsCheck";
-        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(retryTopic));
+        assertEquals(Boolean.FALSE, validator.claimsCheckTopicNotPresent(retryTopic));
     }
 
     @Test
     void testClaimsCheckTopicIsNotPresent() {
-        assertEquals(Boolean.FALSE, validator.claimsCheckTopicNotPresent(""));
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(""));
+    }
+
+    @Test
+    void testClaimsCheckTopicWhenKeyNotPassed() {
+        Map<String, String> topics = new HashMap<>();
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckTopicWhenCorrectValuePassed() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, "claims-check");
+        assertEquals(Boolean.FALSE, validator.claimsCheckTopicNotPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckTopicWhenNullValuePassed() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, null);
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckTopicWhenEmptyValuePassed() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, "");
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckTopicWhenTopicNotAddedInConfig() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, ConfigConstants.CLAIMS_CHECK);
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckDLTWhenKeyNotPassed() {
+        Map<String, String> topics = new HashMap<>();
+        assertEquals(Boolean.FALSE, validator.claimsCheckDltPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckDLTWhenNullValuePassed() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, null);
+        assertEquals(Boolean.FALSE, validator.claimsCheckDltPresent(topics));
+    }
+
+    @Test
+    void testClaimsCheckDLTWhenEmptyValuePassed() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, "");
+        assertEquals(Boolean.FALSE, validator.claimsCheckDltPresent(topics));
+    }
+
+    @Test
+    void testSuccessClaimsCheckDLTValidation() {
+        Map<String, String> topics = new HashMap<>();
+        topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, "dlt");
+        assertEquals(Boolean.TRUE, validator.claimsCheckDltPresent(topics));
     }
 
     @Test

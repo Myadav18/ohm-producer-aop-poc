@@ -16,7 +16,7 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
-import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
@@ -56,7 +56,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(T message, Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
-            KafkaHeaderValidationException, DLTException, IOException {
+            KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
@@ -69,7 +69,12 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         } catch (Exception ex) {
             log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
             if (ex.getCause() instanceof RecordTooLargeException) {
-                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, message);
+                var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
+                var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
+                Map<String, String> topics = new HashMap<>();
+                topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, claimsCheckTopic);
+                topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, claimsCheckDlt);
+                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
                 log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
                 throw ex;
@@ -86,6 +91,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException {
         long startedAt = System.currentTimeMillis();
+        if (e instanceof ClaimsCheckFailedException)
+            throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, message, kafkaHeader);
         } catch (Exception ex) {

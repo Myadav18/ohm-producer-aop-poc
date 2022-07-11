@@ -15,7 +15,6 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
-import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
@@ -53,7 +52,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
-            KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException, IOException {
+            KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
