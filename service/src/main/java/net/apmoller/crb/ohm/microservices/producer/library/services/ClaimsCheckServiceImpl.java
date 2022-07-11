@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.claimscheck.request.ClaimsCheckRequestPayload;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
 import net.apmoller.crb.ohm.microservices.producer.library.storage.FileService;
 import net.apmoller.crb.ohm.microservices.producer.library.util.CompressionUtil;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -50,7 +51,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
      */
     @Override
     public void handleClaimsCheckAfterGettingMemoryIssue(Map<String, Object> kafkaHeader, Map<String, String> topics,
-            T message) throws ClaimsCheckFailedException {
+                                                         T message) throws ClaimsCheckFailedException {
         ProducerRecord<String, T> producerRecord;
         ClaimsCheckRequestPayload claimsCheckPayload = null;
         if (configValidator.claimsCheckTopicNotPresent(topics))
@@ -60,8 +61,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             String url = uploadToAzureBlob(CompressionUtil.gzipCompress(message));
             claimsCheckPayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
             log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
-            producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY),
-                    (T) claimsCheckPayload);
+            producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY), (T) claimsCheckPayload);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
             log.info("Published to Kafka topic post claim check in {} ms", System.currentTimeMillis() - time);
         } catch (ClaimsCheckFailedException ex) {
@@ -71,9 +71,9 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             log.error("Exception while posting claims check topic ", e);
             // Send to DLT
             if (configValidator.claimsCheckDltPresent(topics)) {
-                producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY),
-                        (T) claimsCheckPayload);
+                producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
                 messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+                throw new DLTException("Successfully published message to Claims check DLT");
             } else {
                 log.info("Claims check DLT not added in input topic map hence throwing exception");
                 throw new ClaimsCheckFailedException("Dead letter topic not found");
