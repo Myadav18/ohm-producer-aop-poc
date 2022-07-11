@@ -95,12 +95,12 @@ public class ConfigValidatorTest<T> {
     @Test
     void testClaimsCheckTopicIsPresent() {
         String retryTopic = "claimsCheck";
-        assertEquals(Boolean.TRUE, validator.claimsCheckTopicIsPresent(retryTopic));
+        assertEquals(Boolean.TRUE, validator.claimsCheckTopicNotPresent(retryTopic));
     }
 
     @Test
     void testClaimsCheckTopicIsNotPresent() {
-        assertEquals(Boolean.FALSE, validator.claimsCheckTopicIsPresent(""));
+        assertEquals(Boolean.FALSE, validator.claimsCheckTopicNotPresent(""));
     }
 
     @Test

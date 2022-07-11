@@ -1,12 +1,9 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
-import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.KafkaException;
-import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +17,7 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,7 +57,7 @@ public class KafkaProducerServiceTest<T> {
     }
 
     @Test
-    void testPostingMessageOnTopic() {
+    void testPostingMessageOnTopic() throws IOException {
         String payload = "test";
         Map<String, String> topicMap = new HashMap<>();
         topicMap.put(ConfigConstants.NOTIFICATION_TOPIC_KEY, "test-topic");

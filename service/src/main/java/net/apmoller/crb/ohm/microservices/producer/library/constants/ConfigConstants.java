@@ -11,8 +11,10 @@ public class ConfigConstants {
     public static final String RETRY_TOPIC = "${kafka.notification.retry-topic}";
     public static final String DLT = "${kafka.notification.dead-letter-topic}";
     public static final String CLAIMS_CHECK = "${kafka.notification.claimscheck-topic}";
+    public static final String CLAIMS_CHECK_DLT = "${kafka.notification.claimscheck-dlt}";
     public static final String NOTIFICATION_TOPIC_KEY = "notification-topic";
     public static final String CLAIMS_CHECK_TOPIC_KEY = "claimscheck-topic";
+    public static final String CLAIMS_CHECK_DLT_KEY = "claimscheck-dlt";
     public static final String RETRY_TOPIC_KEY = "retry-topic";
     public static final String DEAD_LETTER_TOPIC_KEY = "dead-letter-topic";
     public static final String SCRAM_SASL_MECHANISM = "SCRAM-SHA-256";

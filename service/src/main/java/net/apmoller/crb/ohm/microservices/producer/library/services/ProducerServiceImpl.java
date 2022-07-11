@@ -6,6 +6,7 @@ import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConst
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -15,26 +16,28 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
+import java.io.IOException;
 import java.util.Map;
 
 @Slf4j
 @Service
 public class ProducerServiceImpl<T> implements ProducerService<T> {
 
-    @Autowired
     private final ApplicationContext context;
 
-    @Autowired
     private final ConfigValidator<T> configValidator;
 
-    @Autowired
     private final MessagePublisherUtil<T> messagePublisherUtil;
 
+    private final ClaimsCheckService<T> claimsCheckService;
+
+    @Autowired
     public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
-            MessagePublisherUtil<T> messagePublisherUtil) {
+            MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
         this.context = context;
         this.configValidator = configValidator;
         this.messagePublisherUtil = messagePublisherUtil;
+        this.claimsCheckService = claimsCheckService;
     }
 
     /**
@@ -51,8 +54,9 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @LogException
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
-    public void produceMessages(T message, Map<String, Object> kafkaHeader) throws TopicNameValidationException,
-            KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException, DLTException {
+    public void produceMessages(T message, Map<String, Object> kafkaHeader)
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
+            KafkaHeaderValidationException, DLTException, IOException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
@@ -60,11 +64,17 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             configValidator.validateInputs(producerTopic, message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+            log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic,
+                    (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
             log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
-            throw ex;
+            if (ex.getCause() instanceof RecordTooLargeException) {
+                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, message);
+            } else {
+                log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
+                throw ex;
+            }
         }
-        log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
 
     /**

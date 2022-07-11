@@ -59,9 +59,13 @@ public class ConfigValidator<T> {
         }
     }
 
-    public boolean claimsCheckTopicIsPresent(String claimsCheckTopic) {
-        return ((Objects.nonNull(claimsCheckTopic)) && !(claimsCheckTopic.isEmpty())
-                && !(claimsCheckTopic.startsWith("${")));
+    public boolean claimsCheckTopicNotPresent(String claimsCheckTopic) {
+        return ((Objects.isNull(claimsCheckTopic)) || (claimsCheckTopic.isEmpty())
+                || (claimsCheckTopic.startsWith("${")));
+    }
+
+    public boolean claimsCheckDltIsPresent(String claimsCheckDLT) {
+        return ((Objects.nonNull(claimsCheckDLT)) && !(claimsCheckDLT.isEmpty()) && !(claimsCheckDLT.startsWith("${")));
     }
 
     /**
@@ -131,6 +135,19 @@ public class ConfigValidator<T> {
                 && (Objects.nonNull(topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY))))
                 && !((topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY)).isEmpty());
 
+    }
+
+    public boolean claimsCheckTopicNotPresent(Map<String, String> topics) {
+        return !topics.containsKey(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY)
+                || (topics.containsKey(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY)
+                        && ((Objects.isNull(topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY)))
+                                || ((topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY)).isEmpty())));
+    }
+
+    public boolean claimsCheckDltPresent(Map<String, String> topics) {
+        return topics.containsKey(ConfigConstants.CLAIMS_CHECK_DLT_KEY)
+                && ((Objects.nonNull(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY)))
+                        || (!(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY)).isEmpty()));
     }
 
     /**
