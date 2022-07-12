@@ -10,33 +10,30 @@ import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
 @Service
 public class ProducerServiceImpl<T> implements ProducerService<T> {
 
-    @Autowired
     private final ApplicationContext context;
 
-    @Autowired
     private final ConfigValidator<T> configValidator;
 
-    @Autowired
     private final MessagePublisherUtil<T> messagePublisherUtil;
 
-    @Autowired
-    private final ClaimsCheckServiceImpl<T> claimsCheckService;
+    private final ClaimsCheckService<T> claimsCheckService;
 
+    @Autowired
     public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
-            MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckServiceImpl<T> claimsCheckService) {
+            MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
         this.context = context;
         this.configValidator = configValidator;
         this.messagePublisherUtil = messagePublisherUtil;
@@ -57,8 +54,9 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     @LogException
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
-    public void produceMessages(T message, Map<String, Object> kafkaHeader) throws TopicNameValidationException,
-            KafkaServerNotFoundException, PayloadValidationException, KafkaHeaderValidationException {
+    public void produceMessages(T message, Map<String, Object> kafkaHeader)
+            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
+            KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
@@ -66,42 +64,43 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             configValidator.validateInputs(producerTopic, message);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+            log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic,
+                    (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
+            log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
             if (ex.getCause() instanceof RecordTooLargeException) {
-                String claimschecktopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
-                if (configValidator.claimsCheckTopicIsPresent(claimschecktopic)) {
-                    claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
-                } else {
-                    log.error("Exception occurred because claims check topic not found", ex);
-                    throw new ClaimsCheckFailedException("claims check topic not found in request", ex);
-                }
+                var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
+                var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
+                Map<String, String> topics = new HashMap<>();
+                topics.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, claimsCheckTopic);
+                topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, claimsCheckDlt);
+                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
                 log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
                 throw ex;
             }
         }
-         log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
 
     /**
-     * Method Sends the Message to Retry Or DLT Topic.
+     * Method Sends the Message to DLT Topic.
      */
     @LogException
     @Recover
-    public void publishMessageOnRetryOrDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
+    public void publishMessageOnDltTopic(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
-            KafkaHeaderValidationException {
+            KafkaHeaderValidationException, DLTException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException) {
+        if (e instanceof ClaimsCheckFailedException)
             throw e;
-        }
         try {
-            messagePublisherUtil.produceToRetryOrDlt(e, message, kafkaHeader);
+            messagePublisherUtil.produceMessageToDlt(e, message, kafkaHeader);
         } catch (Exception ex) {
-            log.error("Exception occurred while posting to error topic ", ex);
+            log.error("Exception while pushing message to DLT ", ex);
             throw ex;
         }
         log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic: {} milliseconds", (System.currentTimeMillis() - startedAt));
+        throw new DLTException("Successfully published message to DLT");
     }
 
 }

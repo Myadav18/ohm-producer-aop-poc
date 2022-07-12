@@ -2,19 +2,18 @@ package net.apmoller.crb.ohm.microservices.producer.library.storage;
 
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.specialized.BlobOutputStream;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 @Log4j2
 @Service
 public class FileService {
+
     private final BlobServiceClient blobServiceClient;
 
     @Autowired
@@ -22,11 +21,10 @@ public class FileService {
         this.blobServiceClient = blobServiceClient;
     }
 
-    public String uploadFile(@NonNull byte[] file, String containerName, String filename) throws IOException {
-        String uploadedUrl = null;
+    public String uploadFile(byte[] file, String containerName, String filename) throws IOException {
         BlobContainerClient blobContainerClient = getBlobContainerClient(containerName);
-        String filenamefinal = filename.concat(".dat");
-        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(filenamefinal).getBlockBlobClient();
+        String fileNameFinal = filename.concat(".dat");
+        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(fileNameFinal).getBlockBlobClient();
         try (BlobOutputStream bos = blockBlobClient.getBlobOutputStream()) {
             bos.write(file);
         }

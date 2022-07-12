@@ -5,7 +5,6 @@ import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.errors.RecordTooLargeException;
 import org.apache.kafka.common.errors.TimeoutException;
@@ -17,23 +16,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionTimedOutException;
 
 import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
 @Service
 public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
-    @Autowired
     private final ConfigValidator<T> configValidator;
 
-    @Autowired
     private final MessagePublisherUtil<T> messagePublisherUtil;
 
-    @Autowired
-    private final ClaimsCheckServiceImpl<T> claimsCheckService;
+    private final ClaimsCheckService<T> claimsCheckService;
 
+    @Autowired
     public KafkaProducerServiceImpl(ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil,
-            ClaimsCheckServiceImpl<T> claimsCheckService) {
+            ClaimsCheckService<T> claimsCheckService) {
         this.configValidator = configValidator;
         this.messagePublisherUtil = messagePublisherUtil;
         this.claimsCheckService = claimsCheckService;
@@ -56,7 +52,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
-            KafkaHeaderValidationException {
+            KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
         String producerTopic = null;
         try {
@@ -64,44 +60,39 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             producerTopic = topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+            log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic,
+                    (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
             if (ex.getCause() instanceof RecordTooLargeException) {
-                String claimschecktopic = topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY);
-                if (!ObjectUtils.isEmpty(claimschecktopic)) {
-                    claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, claimschecktopic, message);
-                } else {
-                    log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
-                    throw new ClaimsCheckFailedException("Claims check topic not found", ex);
-                }
+                claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
                 log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
                 throw ex;
             }
         }
-
-         log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic, (System.currentTimeMillis() - startedAt));
     }
 
     /**
-     * Method Sends the Message to Retry Or DLT Topic.
+     * Method Sends the Message to DLT Topic.
+     * 
+     * @throws DLTException - Exception thrown when message successfully published on Dead letter topic
      */
     @LogException
     @Recover
-    public void publishMessageOnRetryOrDltTopic(RuntimeException e, Map<String, String> topics, T message,
-            Map<String, Object> kafkaHeader)
-            throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException {
-        if (e instanceof ClaimsCheckFailedException) {
-            throw e;
-        }
+    public void publishMessageOnDltTopic(RuntimeException e, Map<String, String> topics, T message,
+            Map<String, Object> kafkaHeader) throws TopicNameValidationException, KafkaServerNotFoundException,
+            PayloadValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
+        if (e instanceof ClaimsCheckFailedException)
+            throw e;
         try {
-            messagePublisherUtil.produceMessageToRetryOrDlt(e, topics, message, kafkaHeader);
+            messagePublisherUtil.produceMessageToDlt(e, topics, message, kafkaHeader);
         } catch (Exception ex) {
-            log.error("Exception while pushing message to error topic ", ex);
+            log.error("Exception while pushing message to DLT ", ex);
             throw ex;
         }
-        log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic: {} milliseconds",
-                (System.currentTimeMillis() - startedAt));
+        log.info("Time taken to successfully execute publishMessageOnDltTopic: {} milliseconds", (System.currentTimeMillis() - startedAt));
+        throw new DLTException("Successfully published message to DLT");
     }
 
 }

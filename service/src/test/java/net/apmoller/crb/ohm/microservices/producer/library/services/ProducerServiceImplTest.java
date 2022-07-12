@@ -3,6 +3,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.KafkaServerNotFoundException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -24,6 +25,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.TransactionTimedOutException;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -48,13 +50,7 @@ public class ProducerServiceImplTest<T> {
     private KafkaTemplate kafkaTemplate;
 
     @MockBean
-    private TimeoutException timeoutException;
-
-    @MockBean
     private ClaimsCheckServiceImpl<T> claimsCheckService;
-
-    @MockBean
-    private TransactionTimedOutException transactionTimedOutException;
 
     @MockBean
     private TopicNameValidationException topicNameValidationException;
@@ -78,6 +74,9 @@ public class ProducerServiceImplTest<T> {
 
     private final String message = "test";
 
+    private TimeoutException timeoutException = new TimeoutException("timeout");
+    private TransactionTimedOutException transactionTimedOutException = new TransactionTimedOutException("timeout");
+
     @BeforeEach
     void setUp() {
         kafkaHeader = new HashMap<>();
@@ -85,7 +84,7 @@ public class ProducerServiceImplTest<T> {
     }
 
     @Test
-    void testMessageSentToTopic() {
+    void testMessageSentToTopic() throws IOException {
         producerServiceImpl.produceMessages((T) message, kafkaHeader);
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
     }
@@ -115,43 +114,40 @@ public class ProducerServiceImplTest<T> {
 
     @Test
     void testProducerServiceForRecover() {
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, (T) message, kafkaHeader);
-        verify(messagePublisherUtil, times(0)).publishToDltTopic(any(), anyMap(), anyString(),
-                any(TopicNameValidationException.class));
+        assertThrows(DLTException.class, () -> producerServiceImpl
+                .publishMessageOnDltTopic(transactionTimedOutException, (T) message, kafkaHeader));
+        verify(messagePublisherUtil, times(1)).produceMessageToDlt(any(), any(), anyMap());
     }
 
     @Test
     void testRecoverInvalidTopicNameExceptionTest() {
         doThrow(topicNameValidationException).when(messagePublisherUtil)
-                .produceToRetryOrDlt(topicNameValidationException, (T) message, kafkaHeader);
+                .produceMessageToDlt(topicNameValidationException, (T) message, kafkaHeader);
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
-                .publishMessageOnRetryOrDltTopic(topicNameValidationException, (T) message, kafkaHeader));
-        verify(messagePublisherUtil, times(1)).produceToRetryOrDlt(topicNameValidationException, (T) message,
-                kafkaHeader);
+                .publishMessageOnDltTopic(topicNameValidationException, (T) message, kafkaHeader));
     }
 
     @Test
     void testRecoverTransactionTImeOutException() {
-        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(transactionTimedOutException, (T) message, kafkaHeader);
-        verify(messagePublisherUtil, times(0)).publishToRetryTopic(any(), anyMap(), anyString(), anyString(),
-                any(TopicNameValidationException.class));
+        assertThrows(DLTException.class, () -> producerServiceImpl
+                .publishMessageOnDltTopic(transactionTimedOutException, (T) message, kafkaHeader));
+        verify(messagePublisherUtil, times(1)).produceMessageToDlt(transactionTimedOutException, (T) message,
+                kafkaHeader);
     }
 
     @Test
     void testRecoverForTimeOutException() {
-        when(validate.retryTopicIsPresent(anyString())).thenReturn(Boolean.TRUE);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(timeoutException, (T) message, kafkaHeader);
-        verify(messagePublisherUtil, times(0)).publishToRetryTopic(any(), anyMap(), anyString(), anyString(),
-                any(TopicNameValidationException.class));
+        assertThrows(DLTException.class,
+                () -> producerServiceImpl.publishMessageOnDltTopic(timeoutException, (T) message, kafkaHeader));
+        verify(messagePublisherUtil, times(1)).produceMessageToDlt(timeoutException, (T) message, kafkaHeader);
     }
 
     @Test
     void testInvalidMainTopic() {
         doThrow(topicNameValidationException).when(messagePublisherUtil)
-                .produceToRetryOrDlt(topicNameValidationException, (T) message, kafkaHeader);
+                .produceMessageToDlt(topicNameValidationException, (T) message, kafkaHeader);
         assertThrows(TopicNameValidationException.class, () -> producerServiceImpl
-                .publishMessageOnRetryOrDltTopic(topicNameValidationException, (T) message, kafkaHeader));
+                .publishMessageOnDltTopic(topicNameValidationException, (T) message, kafkaHeader));
         Mockito.verify(kafkaTemplate, times(0)).send((ProducerRecord) any());
     }
 
@@ -165,52 +161,52 @@ public class ProducerServiceImplTest<T> {
     }
 
     @Test
-    void testPostingOnRetryTopicWhenTopicAuthorizationException() {
-        when(environment.resolvePlaceholders(ConfigConstants.RETRY_TOPIC))
-                .thenReturn("${kafka.notification.retry-topic}");
+    void testPostingOnDLTWhenTopicAuthorizationException() {
+        when(environment.resolvePlaceholders(ConfigConstants.DLT))
+                .thenReturn("${kafka.notification.dead-letter-topic}");
         when(context.getEnvironment()).thenReturn(environment);
         org.apache.kafka.common.KafkaException kafkaException = new org.apache.kafka.common.KafkaException(
                 new TopicAuthorizationException("test"));
-        doNothing().when(messagePublisherUtil).produceToRetryOrDlt(kafkaException, (T) message, kafkaHeader);
-        producerServiceImpl.publishMessageOnRetryOrDltTopic(kafkaException, (T) message, kafkaHeader);
-        verify(messagePublisherUtil, times(1)).produceToRetryOrDlt(kafkaException, (T) message, kafkaHeader);
+        doNothing().when(messagePublisherUtil).produceMessageToDlt(kafkaException, (T) message, kafkaHeader);
+        assertThrows(DLTException.class,
+                () -> producerServiceImpl.publishMessageOnDltTopic(kafkaException, (T) message, kafkaHeader));
+        verify(messagePublisherUtil, times(1)).produceMessageToDlt(kafkaException, (T) message, kafkaHeader);
     }
 
     @Test
-    void testNoRetryWhenRuntimeExceptionInClaimsCheckAndClaimsCheckTopicNotPassed1() {
+    void testWhenRuntimeExceptionAndClaimsCheckTopicPassed() {
         String payload = "test";
         Map<String, String> topicMap = new HashMap<>();
-        when(environment.resolvePlaceholders(ConfigConstants.CLAIMS_CHECK))
-                .thenReturn("${kafka.notification.claimscheck-topic}");
-        when(context.getEnvironment()).thenReturn(environment);
-        when(validate.claimsCheckTopicIsPresent(any())).thenReturn(true);
-        RecordTooLargeException recordTooLargeException=new RecordTooLargeException("record too large");
+        topicMap.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, "${kafka.notification.claimscheck-topic}");
+        topicMap.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, "${kafka.notification.claimscheck-dlt}");
+        RecordTooLargeException recordTooLargeException = new RecordTooLargeException("record too large");
         KafkaException kafkaException = new KafkaException(recordTooLargeException);
-        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
-                anyMap());
-        producerServiceImpl.produceMessages(any(), anyMap());
-        // verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
+        doNothing().when(claimsCheckService).handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topicMap,
+                (T) payload);
+        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
+        producerServiceImpl.produceMessages((T) payload, kafkaHeader);
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
-        verify(claimsCheckService, times(1)).handleClaimsCheckAfterGettingMemoryIssue(anyMap(), anyString(), any());
+        verify(claimsCheckService, times(1)).handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topicMap,
+                (T) payload);
 
     }
 
     @Test
-    void testNoRetryWhenRuntimeExceptionInClaimsCheckAndClaimsCheckTopicPassed1() {
+    void testWhenRuntimeExceptionAndClaimsCheckTopicNotPassed() {
         String payload = "test";
         Map<String, String> topicMap = new HashMap<>();
-        when(environment.resolvePlaceholders(ConfigConstants.CLAIMS_CHECK))
-                .thenReturn("${kafka.notification.claimscheck-topic}");
-        when(context.getEnvironment()).thenReturn(environment);
-        when(validate.claimsCheckTopicIsPresent(any())).thenReturn(false);
-        RecordTooLargeException recordTooLargeException=new RecordTooLargeException("record too large");
+        topicMap.put(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY, "${kafka.notification.claimscheck-topic}");
+        topicMap.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, "${kafka.notification.claimscheck-dlt}");
+        RecordTooLargeException recordTooLargeException = new RecordTooLargeException("record too large");
         KafkaException kafkaException = new KafkaException(recordTooLargeException);
-        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class),
-                anyMap());
-        assertThrows(ClaimsCheckFailedException.class, () -> producerServiceImpl.produceMessages(any(), anyMap()));
-        // verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
+        doThrow(ClaimsCheckFailedException.class).when(claimsCheckService)
+                .handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topicMap, (T) payload);
+        doThrow(kafkaException).when(messagePublisherUtil).publishOnTopic(any(ProducerRecord.class), anyMap());
+        assertThrows(ClaimsCheckFailedException.class,
+                () -> producerServiceImpl.produceMessages((T) payload, kafkaHeader));
         verify(messagePublisherUtil, times(1)).publishOnTopic(any(ProducerRecord.class), anyMap());
-        verify(claimsCheckService, times(0)).handleClaimsCheckAfterGettingMemoryIssue(anyMap(), anyString(), any());
+        verify(claimsCheckService, times(1)).handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topicMap,
+                (T) payload);
 
     }
 }
