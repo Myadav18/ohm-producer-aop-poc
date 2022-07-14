@@ -44,7 +44,9 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
     @Value(ConfigConstants.BLOB_ITEM_NAME_PREFIX)
     private String blobItemNamePrefix;
 
-    private static final String BLOB_UPLOAD_ERROR_MESSAGE = "Error occurred while uploading to azure blob";
+    private static final String BLOB_UPLOAD_ERROR_MESSAGE = "Error occurred while uploading Payload with Correlation-Id {} to azure blob";
+
+    private String correlationId;
 
     /*
      * Method to handle upload to Azure blob storage and posting storage url on claims check topic
@@ -54,21 +56,22 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                                                          T message) throws ClaimsCheckFailedException, DLTException {
         ProducerRecord<String, T> producerRecord;
         ClaimsCheckRequestPayload claimsCheckPayload = null;
+        correlationId = configValidator.getCorrelationId(kafkaHeader);
         if (configValidator.claimsCheckTopicNotPresent(topics))
             throw new ClaimsCheckFailedException("Claims check topic not found");
         try {
             long time = System.currentTimeMillis();
             String url = uploadToAzureBlob(CompressionUtil.gzipCompress(message));
             claimsCheckPayload = ClaimsCheckRequestPayload.newBuilder().setClaimsCheckBlobUrl(url).build();
-            log.info("time taken to upload file to azure blob {} ms", System.currentTimeMillis() - time);
+            log.info("Time taken to upload file with Correlation-Id {} to azure blob {} ms", correlationId, System.currentTimeMillis() - time);
             producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_TOPIC_KEY), (T) claimsCheckPayload);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Published to Kafka topic post claim check in {} ms", System.currentTimeMillis() - time);
+            log.info("Published message with Correlation-Id {} to Kafka topic post claim check in {} ms", correlationId, System.currentTimeMillis() - time);
         } catch (ClaimsCheckFailedException ex) {
-            log.error(BLOB_UPLOAD_ERROR_MESSAGE, ex);
+            log.error(BLOB_UPLOAD_ERROR_MESSAGE, correlationId, ex);
             throw ex;
         } catch (Exception e) {
-            log.error("Exception while posting claims check topic ", e);
+            log.error("Exception while posting Payload with Correlation-Id {} to claims check topic ", correlationId, e);
             // Send to DLT
             if (configValidator.claimsCheckDltPresent(topics)) {
                 producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
@@ -89,7 +92,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             return fileService.uploadFile(compressedPayload, containerName, blobItemNamePrefix + UUID.randomUUID() + "_"
                     + TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis()));
         } catch (Exception e) {
-            log.error(BLOB_UPLOAD_ERROR_MESSAGE, e);
+            log.error(BLOB_UPLOAD_ERROR_MESSAGE, correlationId, e);
             throw new ClaimsCheckFailedException("Claims check failed while doing upload to blob", e);
         }
     }
