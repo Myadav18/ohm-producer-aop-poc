@@ -2,6 +2,7 @@ package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
+import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.TopicNameValidationException;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -154,5 +155,10 @@ public class KafkaProducerServiceTest<T> {
                 anyMap());
         verify(validator, times(retryCount)).validateInputsForMultipleProducerFlow(topicMap, (T) payload);
         verify(messagePublisherUtil, times(3)).publishOnTopic(any(ProducerRecord.class), anyMap());
+
+        doNothing().when(messagePublisherUtil).produceMessageToDlt(any(TimeoutException.class),
+                anyMap(), (T) anyString(), anyMap());
+        assertThrows(DLTException.class,
+                () -> kafkaProducerService.produceMessages(topicMap, (T) payload, kafkaHeader));
     }
 }
