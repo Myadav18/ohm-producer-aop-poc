@@ -156,7 +156,8 @@ public class ConfigValidator<T> {
     }
 
     public String getCorrelationId(Map<String, Object> kafkaHeader) {
-        Object correlationId = kafkaHeader.get(ConfigConstants.HEADER_CORRELATION_ID);
-        return Objects.isNull(correlationId) ? "" : correlationId.toString();
+
+        return (kafkaHeader.containsKey(ConfigConstants.HEADER_CORRELATION_ID) && !Objects.isNull(kafkaHeader.get(ConfigConstants.HEADER_CORRELATION_ID))) ?
+                kafkaHeader.get(ConfigConstants.HEADER_CORRELATION_ID).toString() : "";
     }
 }
