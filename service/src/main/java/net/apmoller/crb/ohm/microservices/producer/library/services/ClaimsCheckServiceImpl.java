@@ -76,9 +76,9 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             if (configValidator.claimsCheckDltPresent(topics)) {
                 producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
                 messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-                throw new DLTException("Successfully published message to Claims check DLT");
+                throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to Claims check DLT", correlationId));
             } else {
-                log.info("Claims check DLT not added in input topic map hence throwing exception");
+                log.info("Claims check DLT for Correlation-Id {} not added in input topic map hence throwing exception", correlationId);
                 throw new ClaimsCheckFailedException("Dead letter topic not found");
             }
         }
@@ -93,7 +93,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                     + TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis()));
         } catch (Exception e) {
             log.error(BLOB_UPLOAD_ERROR_MESSAGE, correlationId, e);
-            throw new ClaimsCheckFailedException("Claims check failed while doing upload to blob", e);
+            throw new ClaimsCheckFailedException("Claims check failed while uploading to blob", e);
         }
     }
 }

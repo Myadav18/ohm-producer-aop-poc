@@ -94,7 +94,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException)
+        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException)
             throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, message, kafkaHeader);
@@ -104,7 +104,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         }
         log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic for Payload with Correlation-Id {}: {} milliseconds",
             correlationId, (System.currentTimeMillis() - startedAt));
-        throw new DLTException("Successfully published message to DLT");
+        throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to DLT", correlationId));
     }
 
 }
