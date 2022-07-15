@@ -31,6 +31,8 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     private final ClaimsCheckService<T> claimsCheckService;
 
+    private String correlationId;
+
     @Autowired
     public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
             MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
@@ -62,12 +64,13 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
         try {
             producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
             configValidator.validateInputs(producerTopic, message);
+            correlationId = configValidator.getCorrelationId(kafkaHeader);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic,
+            log.info("Successfully published Payload with Correlation-Id {} to Kafka topic: {} in {} milliseconds", correlationId, producerTopic,
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
-            log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
+            log.error("Unable to push Payload with Correlation-Id {} to kafka topic: {}", correlationId, producerTopic, ex);
             if (ex.getCause() instanceof RecordTooLargeException) {
                 var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
                 var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
@@ -76,7 +79,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                 topics.put(ConfigConstants.CLAIMS_CHECK_DLT_KEY, claimsCheckDlt);
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
-                log.error("Unable to push message to kafka topic: {}", producerTopic, ex);
+                log.error("Unable to push Payload with Correlation-Id {} to kafka topic: {}", correlationId, producerTopic, ex);
                 throw ex;
             }
         }
@@ -91,16 +94,17 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException)
+        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException)
             throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, message, kafkaHeader);
         } catch (Exception ex) {
-            log.error("Exception while pushing message to DLT ", ex);
+            log.error("Exception while pushing Payload with Correlation-Id {} to DLT ", correlationId, ex);
             throw ex;
         }
-        log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic: {} milliseconds", (System.currentTimeMillis() - startedAt));
-        throw new DLTException("Successfully published message to DLT");
+        log.info("Time taken to successfully execute publishMessageOnRetryOrDltTopic for Payload with Correlation-Id {}: {} milliseconds",
+            correlationId, (System.currentTimeMillis() - startedAt));
+        throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to DLT", correlationId));
     }
 
 }

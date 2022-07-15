@@ -27,6 +27,8 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     private final ClaimsCheckService<T> claimsCheckService;
 
+    private String correlationId;
+
     @Autowired
     public KafkaProducerServiceImpl(ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil,
             ClaimsCheckService<T> claimsCheckService) {
@@ -57,16 +59,17 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
         String producerTopic = null;
         try {
             configValidator.validateInputsForMultipleProducerFlow(topics, message);
+            correlationId = configValidator.getCorrelationId(kafkaHeader);
             producerTopic = topics.get(ConfigConstants.NOTIFICATION_TOPIC_KEY);
             ProducerRecord<String, T> producerRecord = new ProducerRecord<>(producerTopic, message);
             messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
-            log.info("Successfully published to Kafka topic: {} in {} milliseconds", producerTopic,
+            log.info("Successfully published Payload with Correlation-Id {} to Kafka topic: {} in {} milliseconds", correlationId, producerTopic,
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
             if (ex.getCause() instanceof RecordTooLargeException) {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
-                log.error("Exception occurred while posting message to target kafka topic: {} ", producerTopic, ex);
+                log.error("Exception occurred while posting Payload with Correlation-Id {} to target kafka topic: {} ", correlationId, producerTopic, ex);
                 throw ex;
             }
         }
@@ -83,16 +86,17 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             Map<String, Object> kafkaHeader) throws TopicNameValidationException, KafkaServerNotFoundException,
             PayloadValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException)
+        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException)
             throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, topics, message, kafkaHeader);
         } catch (Exception ex) {
-            log.error("Exception while pushing message to DLT ", ex);
+            log.error("Exception while pushing Payload with Correlation-Id {} to DLT ", correlationId, ex);
             throw ex;
         }
-        log.info("Time taken to successfully execute publishMessageOnDltTopic: {} milliseconds", (System.currentTimeMillis() - startedAt));
-        throw new DLTException("Successfully published message to DLT");
+        log.info("Time taken to successfully execute publishMessageOnDltTopic for Payload with Correlation-Id {}: {} milliseconds",
+            correlationId, (System.currentTimeMillis() - startedAt));
+        throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to DLT", correlationId));
     }
 
 }

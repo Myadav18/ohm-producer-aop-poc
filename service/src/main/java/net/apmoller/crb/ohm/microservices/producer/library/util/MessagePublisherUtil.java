@@ -45,6 +45,8 @@ public class MessagePublisherUtil<T> {
      * @param kafkaHeader - Kafka headers map from input
      */
     public void publishOnTopic(ProducerRecord<String, T> producerRecord, Map<String, Object> kafkaHeader) {
+
+        String correlationId = configValidator.getCorrelationId(kafkaHeader);
         try {
             addHeaders(producerRecord.headers(), kafkaHeader);
             Schema schema = ReflectData.get().getSchema(producerRecord.value().getClass());
@@ -52,19 +54,19 @@ public class MessagePublisherUtil<T> {
             future.addCallback(new ListenableFutureCallback<>() {
                 @Override
                 public void onSuccess(SendResult<String, T> result) {
-                    log.info("Sent message to kafka topic:[{}] on partition:[{}] with offset=[{}]",
+                    log.info("Sent Payload with Correlation-Id {} to kafka topic:[{}] on partition:[{}] with offset=[{}]", correlationId,
                             producerRecord.topic(), result.getRecordMetadata().partition(), result.getRecordMetadata().offset());
                 }
 
                 @SneakyThrows
                 @Override
                 public void onFailure(Throwable ex) {
-                    log.error("Unable to send message to kafka topic:[{}] due to : {}", producerRecord.topic(), ex);
+                    log.error("Unable to send Payload with Correlation-Id {} to kafka topic:[{}] due to : {}", correlationId, producerRecord.topic(), ex);
                     throw ex;
                 }
             });
         } catch (Exception ex) {
-            log.error("Exception occurred while pushing message ", ex);
+            log.error("Exception occurred while pushing Payload with Correlation-Id {} ", correlationId, ex);
             throw ex;
         }
     }
@@ -98,9 +100,12 @@ public class MessagePublisherUtil<T> {
     public void produceMessageToDlt(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException,
             KafkaHeaderValidationException {
+
         String dltTopic = null;
+        String correlationId = configValidator.getCorrelationId(kafkaHeader);
         if (configValidator.isInputValidationException(e)) {
-            log.info("Throwing validation exception: {}", e.getClass().getName());
+            log.info("Throwing validation exception for Payload with Correlation-Id {}: {}",
+                correlationId, e.getClass().getName());
             throw e;
         }
         try {
@@ -108,13 +113,14 @@ public class MessagePublisherUtil<T> {
             if (configValidator.dltTopicIsPresent(dltTopic)) {
                 ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
                 publishOnTopic(producerRecord, kafkaHeader);
-                log.info("Published message to dead letter topic: {}", dltTopic);
+                log.info("Published Payload with Correlation-Id {} to dead letter topic: {}", correlationId, dltTopic);
             } else {
                 log.info("DLT not added in config");
                 throw e;
             }
         } catch (Exception ex) {
-            log.error("Exception Occurred while posting to DLT: {}", dltTopic);
+            log.error("Exception Occurred while posting Payload with Correlation-Id {} to DLT: {}",
+                correlationId, dltTopic);
             throw ex;
         }
     }
@@ -125,9 +131,12 @@ public class MessagePublisherUtil<T> {
     public void produceMessageToDlt(RuntimeException e, Map<String, String> topics, T message,
             Map<String, Object> kafkaHeader) throws KafkaServerNotFoundException, TopicNameValidationException,
             PayloadValidationException, KafkaHeaderValidationException {
+
         String dltTopic = null;
+        String correlationId = configValidator.getCorrelationId(kafkaHeader);
         if (configValidator.isInputValidationException(e)) {
-            log.info("Throwing validation exception: {}", e.getClass().getName());
+            log.info("Throwing validation exception for Payload with Correlation-Id {}: {}",
+                correlationId, e.getClass().getName());
             throw e;
         }
         try {
@@ -135,13 +144,13 @@ public class MessagePublisherUtil<T> {
                 dltTopic = topics.get(ConfigConstants.DEAD_LETTER_TOPIC_KEY);
                 ProducerRecord<String, T> producerRecord = new ProducerRecord<>(dltTopic, message);
                 publishOnTopic(producerRecord, kafkaHeader);
-                log.info("Published message to dead letter topic: {}", dltTopic);
+                log.info("Published Payload with Correlation-Id {} to dead letter topic: {}", correlationId, dltTopic);
             } else {
                 log.info("DLT not added in input topic map");
                 throw e;
             }
         } catch (Exception ex) {
-            log.error("Exception while posting to DLT: {} ", dltTopic, ex);
+            log.error("Exception while posting Payload with Correlation-Id {} to DLT: {} ", correlationId, dltTopic, ex);
             throw ex;
         }
     }

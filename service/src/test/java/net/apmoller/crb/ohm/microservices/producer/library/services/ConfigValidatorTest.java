@@ -240,4 +240,18 @@ public class ConfigValidatorTest<T> {
         assertThrows(KafkaServerNotFoundException.class, () -> validator.bootstrapServerValidation(""));
     }
 
+    @Test
+    void testCorrelationIdNotNull() {
+        Map<String, Object> headerMap = new HashMap<>();
+        headerMap.put("Batch-Id", "test");
+        headerMap.put("X-Correlation-ID", "2134234987605");
+        assertEquals("2134234987605", validator.getCorrelationId(headerMap));
+    }
+
+    @Test
+    void testCorrelationIdNull() {
+        Map<String, Object> headerMap = new HashMap<>();
+        headerMap.put("Batch-Id", "test");
+        assertEquals("", validator.getCorrelationId(headerMap));
+    }
 }

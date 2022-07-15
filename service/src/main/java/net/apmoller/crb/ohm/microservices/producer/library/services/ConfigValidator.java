@@ -154,4 +154,10 @@ public class ConfigValidator<T> {
         return ((ex instanceof KafkaServerNotFoundException) || (ex instanceof TopicNameValidationException)
                 || (ex instanceof PayloadValidationException) || (ex instanceof KafkaHeaderValidationException));
     }
+
+    public String getCorrelationId(Map<String, Object> kafkaHeader) {
+
+        return (kafkaHeader.containsKey(ConfigConstants.HEADER_CORRELATION_ID) && !Objects.isNull(kafkaHeader.get(ConfigConstants.HEADER_CORRELATION_ID))) ?
+                kafkaHeader.get(ConfigConstants.HEADER_CORRELATION_ID).toString() : "";
+    }
 }
