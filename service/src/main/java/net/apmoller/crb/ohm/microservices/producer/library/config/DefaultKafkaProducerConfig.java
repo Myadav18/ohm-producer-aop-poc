@@ -1,7 +1,9 @@
 package net.apmoller.crb.ohm.microservices.producer.library.config;
 
 import io.confluent.kafka.serializers.AbstractKafkaSchemaSerDeConfig;
+import io.micrometer.core.aop.CountedAspect;
 import io.micrometer.core.instrument.ImmutableTag;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -193,5 +195,10 @@ public class DefaultKafkaProducerConfig<T> {
             properties.put("ssl.keystore.password", keystorePassword);
             properties.put("ssl.key.password", keystorePassword);
         }
+    }
+
+    @Bean
+    CountedAspect countedAspect(MeterRegistry registry) {
+        return new CountedAspect(registry);
     }
 }
