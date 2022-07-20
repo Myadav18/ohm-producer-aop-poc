@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.claimscheck.request.ClaimsCheckRequestPayload;
+import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -34,6 +35,9 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
 
     @Autowired
     private ConfigValidator<T> configValidator;
+
+    @Autowired
+    MicroMeterConfig microMeterConfig;
 
     @Autowired
     private ApplicationContext context;
@@ -69,9 +73,11 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             log.info("Published message with Correlation-Id {} to Kafka topic post claim check in {} ms", correlationId, System.currentTimeMillis() - time);
         } catch (ClaimsCheckFailedException ex) {
             log.error(BLOB_UPLOAD_ERROR_MESSAGE, correlationId, ex);
+            microMeterConfig.incrementCounter("claimsCheckTargetTopicErrorCount");
             throw ex;
         } catch (Exception e) {
             log.error("Exception while posting Payload with Correlation-Id {} to claims check topic ", correlationId, e);
+            microMeterConfig.incrementCounter("claimsCheckTargetTopicErrorCount");
             // Send to DLT
             if (configValidator.claimsCheckDltPresent(topics)) {
                 producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
@@ -79,6 +85,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                 throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to Claims check DLT", correlationId));
             } else {
                 log.info("Claims check DLT for Correlation-Id {} not added in input topic map hence throwing exception", correlationId);
+                microMeterConfig.incrementCounter("claimsCheckDltTopicErrorCount");
                 throw new ClaimsCheckFailedException("Dead letter topic not found");
             }
         }
