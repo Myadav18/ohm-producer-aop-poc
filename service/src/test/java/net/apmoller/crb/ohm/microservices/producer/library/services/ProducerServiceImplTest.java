@@ -1,6 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
 import lombok.extern.slf4j.Slf4j;
+import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -42,6 +43,9 @@ public class ProducerServiceImplTest<T> {
 
     @MockBean
     private Environment environment;
+
+    @MockBean
+    private MicroMeterConfig microMeterConfig;
 
     @MockBean
     private ConfigValidator<T> validate;

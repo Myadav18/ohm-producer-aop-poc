@@ -80,8 +80,14 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             microMeterConfig.incrementCounter("claimsCheckTargetTopicErrorCount");
             // Send to DLT
             if (configValidator.claimsCheckDltPresent(topics)) {
-                producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
-                messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+                try {
+                    producerRecord = new ProducerRecord<>(topics.get(ConfigConstants.CLAIMS_CHECK_DLT_KEY), (T) claimsCheckPayload);
+                    messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
+                } catch (Exception ex) {
+                    log.error("Exception while posting Payload with Correlation-Id {} to claims check Dlt topic ", correlationId, ex);
+                    microMeterConfig.incrementCounter("claimsCheckDltTopicErrorCount");
+                    throw ex;
+                }
                 throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to Claims check DLT", correlationId));
             } else {
                 log.info("Claims check DLT for Correlation-Id {} not added in input topic map hence throwing exception", correlationId);

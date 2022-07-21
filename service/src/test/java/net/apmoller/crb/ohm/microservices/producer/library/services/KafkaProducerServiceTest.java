@@ -1,5 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -42,6 +43,9 @@ public class KafkaProducerServiceTest<T> {
 
     @MockBean
     private MessagePublisherUtil<T> messagePublisherUtil;
+
+    @MockBean
+    private MicroMeterConfig microMeterConfig;
 
     @Autowired
     private KafkaProducerService<T> kafkaProducerService;

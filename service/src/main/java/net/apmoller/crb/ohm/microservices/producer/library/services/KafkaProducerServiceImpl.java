@@ -1,8 +1,8 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
-import io.micrometer.core.annotation.Counted;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
+import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -31,6 +31,9 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     private String correlationId;
 
     @Autowired
+    MicroMeterConfig microMeterConfig;
+
+    @Autowired
     public KafkaProducerServiceImpl(ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil,
             ClaimsCheckService<T> claimsCheckService) {
         this.configValidator = configValidator;
@@ -51,7 +54,6 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
      */
     @Override
     @LogException
-    @Counted(value = "kafka_producer_target_topic_error_total", recordFailuresOnly = true, description = "The total number of record sends to target topic that resulted in errors")
     @Retryable(value = { TransactionTimedOutException.class,
             TimeoutException.class }, maxAttemptsExpression = "${spring.retry.maximum.attempts}", backoff = @Backoff(delayExpression = "${spring.retry.backoff.delay}", multiplierExpression = "${spring.retry.backoff.multiplier}", maxDelayExpression = "${spring.retry.backoff.maxdelay}"))
     public void produceMessages(Map<String, String> topics, T message, Map<String, Object> kafkaHeader)
@@ -68,6 +70,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             log.info("Successfully published Payload with Correlation-Id {} to Kafka topic: {} in {} milliseconds", correlationId, producerTopic,
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
+            microMeterConfig.incrementCounter("multipleProducerTargetTopicErrorCount");
             if (ex.getCause() instanceof RecordTooLargeException) {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
