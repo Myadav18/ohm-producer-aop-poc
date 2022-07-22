@@ -1,8 +1,8 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
-import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -33,7 +33,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
     private final ClaimsCheckService<T> claimsCheckService;
 
     @Autowired
-    MicroMeterConfig microMeterConfig;
+    private MeterRegistry registry;
 
     private String correlationId;
 
@@ -75,7 +75,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
             log.error("Unable to push Payload with Correlation-Id {} to kafka topic: {}", correlationId, producerTopic, ex);
-            microMeterConfig.incrementCounter("singleProducerTargetTopicErrorCount");
+            registry.counter("kafka_single_producer_target_topic_record_error_total").increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
                 var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
                 var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);

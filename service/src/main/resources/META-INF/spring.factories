@@ -3,7 +3,6 @@ net.apmoller.crb.ohm.microservices.producer.library.services.ProducerServiceImpl
 net.apmoller.crb.ohm.microservices.producer.library.services.ConfigValidator,\
 net.apmoller.crb.ohm.microservices.producer.library.services.KafkaProducerServiceImpl,\
 net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil,\
-net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig,\
 net.apmoller.crb.ohm.microservices.producer.library.storage.FileService,\
 net.apmoller.crb.ohm.microservices.producer.library.storage.AzureBlobStorageConfig,\
 net.apmoller.crb.ohm.microservices.producer.library.services.ClaimsCheckServiceImpl,\

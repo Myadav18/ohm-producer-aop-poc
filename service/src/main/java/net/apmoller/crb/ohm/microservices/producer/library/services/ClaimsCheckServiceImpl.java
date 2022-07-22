@@ -1,10 +1,10 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.claimscheck.request.ClaimsCheckRequestPayload;
-import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -37,7 +37,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
     private ConfigValidator<T> configValidator;
 
     @Autowired
-    MicroMeterConfig microMeterConfig;
+    MeterRegistry meterRegistry;
 
     @Autowired
     private ApplicationContext context;
@@ -73,11 +73,11 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
             log.info("Published message with Correlation-Id {} to Kafka topic post claim check in {} ms", correlationId, System.currentTimeMillis() - time);
         } catch (ClaimsCheckFailedException ex) {
             log.error(BLOB_UPLOAD_ERROR_MESSAGE, correlationId, ex);
-            microMeterConfig.incrementCounter("claimsCheckTargetTopicErrorCount");
+            meterRegistry.counter("kafka_producer_claims_check_target_topic_error_total").increment();
             throw ex;
         } catch (Exception e) {
             log.error("Exception while posting Payload with Correlation-Id {} to claims check topic ", correlationId, e);
-            microMeterConfig.incrementCounter("claimsCheckTargetTopicErrorCount");
+            meterRegistry.counter("kafka_producer_claims_check_target_topic_error_total").increment();
             // Send to DLT
             if (configValidator.claimsCheckDltPresent(topics)) {
                 try {
@@ -85,13 +85,13 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                     messagePublisherUtil.publishOnTopic(producerRecord, kafkaHeader);
                 } catch (Exception ex) {
                     log.error("Exception while posting Payload with Correlation-Id {} to claims check Dlt topic ", correlationId, ex);
-                    microMeterConfig.incrementCounter("claimsCheckDltTopicErrorCount");
+                    meterRegistry.counter("kafka_producer_claims_check_dlt_topic_error_total").increment();
                     throw ex;
                 }
                 throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to Claims check DLT", correlationId));
             } else {
                 log.info("Claims check DLT for Correlation-Id {} not added in input topic map hence throwing exception", correlationId);
-                microMeterConfig.incrementCounter("claimsCheckDltTopicErrorCount");
+                meterRegistry.counter("kafka_producer_claims_check_dlt_topic_error_total").increment();
                 throw new ClaimsCheckFailedException("Dead letter topic not found");
             }
         }

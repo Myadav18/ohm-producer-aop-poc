@@ -1,7 +1,8 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
-import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -45,7 +46,7 @@ public class ProducerServiceImplTest<T> {
     private Environment environment;
 
     @MockBean
-    private MicroMeterConfig microMeterConfig;
+    private MeterRegistry registry;
 
     @MockBean
     private ConfigValidator<T> validate;
@@ -85,6 +86,8 @@ public class ProducerServiceImplTest<T> {
     void setUp() {
         kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        Counter counter = mock(Counter.class);
+        when(registry.counter(any())).thenReturn(counter);
     }
 
     @Test

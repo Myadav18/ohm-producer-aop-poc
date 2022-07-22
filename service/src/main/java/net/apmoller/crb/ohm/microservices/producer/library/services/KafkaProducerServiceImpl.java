@@ -1,8 +1,8 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.aop.annotations.LogException;
-import net.apmoller.crb.ohm.microservices.producer.library.config.MicroMeterConfig;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.*;
 import net.apmoller.crb.ohm.microservices.producer.library.util.MessagePublisherUtil;
@@ -31,7 +31,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
     private String correlationId;
 
     @Autowired
-    MicroMeterConfig microMeterConfig;
+    private MeterRegistry registry;
 
     @Autowired
     public KafkaProducerServiceImpl(ConfigValidator<T> configValidator, MessagePublisherUtil<T> messagePublisherUtil,
@@ -70,7 +70,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             log.info("Successfully published Payload with Correlation-Id {} to Kafka topic: {} in {} milliseconds", correlationId, producerTopic,
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
-            microMeterConfig.incrementCounter("multipleProducerTargetTopicErrorCount");
+            registry.counter("kafka_multiple_producer_target_topic_record_error_total").increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
