@@ -30,7 +30,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     private String correlationId;
 
-    private static boolean isRecordTooLargeEncountered = false;
+    private boolean isRecordTooLargeEncountered = false;
 
     @Autowired
     private MeterRegistry registry;

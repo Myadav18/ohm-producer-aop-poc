@@ -37,7 +37,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     private String correlationId;
 
-    private static boolean isRecordTooLargeEncountered = false;
+    private boolean isRecordTooLargeEncountered = false;
 
     @Autowired
     public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
