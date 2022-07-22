@@ -16,7 +16,9 @@ import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.errors.TopicAuthorizationException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +39,7 @@ import static org.mockito.Mockito.*;
 @Slf4j
 @SpringBootTest(classes = { ProducerServiceImpl.class })
 @ActiveProfiles({ "test" })
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public class ProducerServiceImplTest<T> {
 
     @MockBean
