@@ -38,4 +38,12 @@ public class ConfigConstants {
     public static final String AZURE_STORAGE_ENDPOINT = "${azure.storage.endpoint}";
     public static final String AZURE_STORAGE_ENDPOINT_SUFFIX = "${azure.storage.endpoint-suffix}";
     public static final String CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=%s;AccountKey=%s;EndpointSuffix=%s";
+
+    // Metrics Constant
+    public static final String MULTIPLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL = "kafka_multiple_producer_target_topic_record_error_total";
+    public static final String MULTIPLE_PRODUCER_DLT_ERROR_TOTAL = "kafka_producer_dlt_topic_error_total";
+    public static final String SINGLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL = "kafka_single_producer_target_topic_record_error_total";
+    public static final String SINGLE_PRODUCER_DLT_ERROR_TOTAL = "kafka_producer_dlt_topic_record_error_total";
+    public static final String CLAIMS_CHECK_TARGET_TOPIC_ERROR_TOTAL = "kafka_producer_claims_check_target_topic_error_total";
+    public static final String CLAIMS_CHECK_DLT_ERROR_TOTAL = "kafka_producer_claims_check_dlt_topic_error_total";
 }
