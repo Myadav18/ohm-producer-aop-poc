@@ -1,5 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
@@ -44,6 +46,9 @@ public class ProducerServiceImplTest<T> {
     private Environment environment;
 
     @MockBean
+    private MeterRegistry registry;
+
+    @MockBean
     private ConfigValidator<T> validate;
 
     @MockBean
@@ -81,6 +86,8 @@ public class ProducerServiceImplTest<T> {
     void setUp() {
         kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        Counter counter = mock(Counter.class);
+        when(registry.counter(any())).thenReturn(counter);
     }
 
     @Test

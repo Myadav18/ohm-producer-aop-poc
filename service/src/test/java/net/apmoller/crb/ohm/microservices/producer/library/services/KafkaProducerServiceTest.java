@@ -1,5 +1,7 @@
 package net.apmoller.crb.ohm.microservices.producer.library.services;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.ClaimsCheckFailedException;
 import net.apmoller.crb.ohm.microservices.producer.library.exceptions.DLTException;
@@ -49,6 +51,9 @@ public class KafkaProducerServiceTest<T> {
     @MockBean
     private ClaimsCheckServiceImpl<T> claimsCheckService;
 
+    @MockBean
+    private MeterRegistry registry;
+
     @Value("${spring.retry.maximum.attempts}")
     Integer retryCount;
 
@@ -58,6 +63,8 @@ public class KafkaProducerServiceTest<T> {
     void setUp() {
         kafkaHeader = new HashMap<>();
         kafkaHeader.put("X-DOCBROKER-Correlation-ID", "DUMMYHEXID");
+        Counter counter = mock(Counter.class);
+        when(registry.counter(any())).thenReturn(counter);
     }
 
     @Test

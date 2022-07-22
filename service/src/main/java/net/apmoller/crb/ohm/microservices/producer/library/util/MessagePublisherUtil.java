@@ -1,5 +1,6 @@
 package net.apmoller.crb.ohm.microservices.producer.library.util;
 
+import io.micrometer.core.annotation.Counted;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.apmoller.crb.ohm.microservices.producer.library.constants.ConfigConstants;
@@ -97,6 +98,7 @@ public class MessagePublisherUtil<T> {
     /**
      * Method to publish the Message on DLT Topic for single producer flow.
      */
+    @Counted(value = "kafka_producer_dlt_topic_record_error_total", recordFailuresOnly = true, description = "The total number of record sends to dlt topic that resulted in errors")
     public void produceMessageToDlt(RuntimeException e, T message, Map<String, Object> kafkaHeader)
             throws KafkaServerNotFoundException, TopicNameValidationException, PayloadValidationException,
             KafkaHeaderValidationException {
@@ -128,6 +130,7 @@ public class MessagePublisherUtil<T> {
     /**
      * Method to publish the Message on DLT Topic for multiple producer flow.
      */
+    @Counted(value = "kafka_producer_dlt_topic_error_total", recordFailuresOnly = true, description = "The total number of record sends to Dtl topic that resulted in errors")
     public void produceMessageToDlt(RuntimeException e, Map<String, String> topics, T message,
             Map<String, Object> kafkaHeader) throws KafkaServerNotFoundException, TopicNameValidationException,
             PayloadValidationException, KafkaHeaderValidationException {
