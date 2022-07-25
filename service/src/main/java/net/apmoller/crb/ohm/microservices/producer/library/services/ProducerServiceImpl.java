@@ -37,8 +37,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
 
     private String correlationId;
 
-    private boolean isRecordTooLargeEncountered = false;
-
     @Autowired
     public ProducerServiceImpl(ApplicationContext context, ConfigValidator<T> configValidator,
             MessagePublisherUtil<T> messagePublisherUtil, ClaimsCheckService<T> claimsCheckService) {
@@ -66,7 +64,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
-        isRecordTooLargeEncountered = false;
         String producerTopic = null;
         try {
             producerTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.NOTIFICATION_TOPIC);
@@ -80,7 +77,6 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             log.error("Unable to push Payload with Correlation-Id {} to kafka topic: {}", correlationId, producerTopic, ex);
             registry.counter(ConfigConstants.SINGLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL).increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
-                isRecordTooLargeEncountered = true;
                 var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
                 var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
                 Map<String, String> topics = new HashMap<>();
@@ -103,7 +99,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException || isRecordTooLargeEncountered)
+        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException)
             throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, message, kafkaHeader);

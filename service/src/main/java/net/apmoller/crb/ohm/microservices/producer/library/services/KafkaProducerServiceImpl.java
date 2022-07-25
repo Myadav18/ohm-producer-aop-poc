@@ -30,8 +30,6 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
 
     private String correlationId;
 
-    private boolean isRecordTooLargeEncountered = false;
-
     @Autowired
     private MeterRegistry registry;
 
@@ -62,7 +60,6 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             throws TopicNameValidationException, KafkaServerNotFoundException, PayloadValidationException,
             KafkaHeaderValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
-        isRecordTooLargeEncountered = false;
         String producerTopic = null;
         try {
             configValidator.validateInputsForMultipleProducerFlow(topics, message);
@@ -75,7 +72,6 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
         } catch (Exception ex) {
             registry.counter(ConfigConstants.MULTIPLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL).increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
-                isRecordTooLargeEncountered = true;
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {
                 log.error("Exception occurred while posting Payload with Correlation-Id {} to target kafka topic: {} ", correlationId, producerTopic, ex);
@@ -95,7 +91,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             Map<String, Object> kafkaHeader) throws TopicNameValidationException, KafkaServerNotFoundException,
             PayloadValidationException, DLTException, ClaimsCheckFailedException {
         long startedAt = System.currentTimeMillis();
-        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException || isRecordTooLargeEncountered)
+        if (e instanceof ClaimsCheckFailedException || e instanceof DLTException)
             throw e;
         try {
             messagePublisherUtil.produceMessageToDlt(e, topics, message, kafkaHeader);
