@@ -86,7 +86,7 @@ public class ClaimsCheckServiceImpl<T> implements ClaimsCheckService<T> {
                 } catch (Exception ex) {
                     log.error("Exception while posting Payload with Correlation-Id {} to claims check Dlt topic ", correlationId, ex);
                     meterRegistry.counter(ConfigConstants.CLAIMS_CHECK_DLT_ERROR_TOTAL).increment();
-                    throw new ClaimsCheckFailedException(String.format("Exception while posting Payload with Correlation-Id %s to claims check DLT.", correlationId), e);
+                    throw new ClaimsCheckFailedException(String.format("Exception while posting Payload with Correlation-Id %s to claims check DLT.", correlationId), ex);
                 }
                 throw new DLTException(String.format("Successfully published Payload with Correlation-Id %s to Claims check DLT", correlationId));
             } else {
