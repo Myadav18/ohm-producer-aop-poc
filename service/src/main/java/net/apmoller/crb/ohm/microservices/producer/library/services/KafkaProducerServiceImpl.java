@@ -70,7 +70,7 @@ public class KafkaProducerServiceImpl<T> implements KafkaProducerService<T> {
             log.info("Successfully published Payload with Correlation-Id {} to Kafka topic: {} in {} milliseconds", correlationId, producerTopic,
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
-            registry.counter("kafka_multiple_producer_target_topic_record_error_total").increment();
+            registry.counter(ConfigConstants.MULTIPLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL).increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
                 claimsCheckService.handleClaimsCheckAfterGettingMemoryIssue(kafkaHeader, topics, message);
             } else {

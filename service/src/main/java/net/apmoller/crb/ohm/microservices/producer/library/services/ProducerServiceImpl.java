@@ -75,7 +75,7 @@ public class ProducerServiceImpl<T> implements ProducerService<T> {
                     (System.currentTimeMillis() - startedAt));
         } catch (Exception ex) {
             log.error("Unable to push Payload with Correlation-Id {} to kafka topic: {}", correlationId, producerTopic, ex);
-            registry.counter("kafka_single_producer_target_topic_record_error_total").increment();
+            registry.counter(ConfigConstants.SINGLE_PRODUCER_TARGET_TOPIC_ERROR_TOTAL).increment();
             if (ex.getCause() instanceof RecordTooLargeException) {
                 var claimsCheckTopic = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK);
                 var claimsCheckDlt = context.getEnvironment().resolvePlaceholders(ConfigConstants.CLAIMS_CHECK_DLT);
