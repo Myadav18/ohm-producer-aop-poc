@@ -51,6 +51,11 @@
         <version>2.0.2</version>
       </dependency>
       <dependency>
+        <groupId>net.apmoller.crb.ohm.logger</groupId>
+        <artifactId>ohm-logger</artifactId>
+        <version>1.0.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-aop</artifactId>
         <scope>test</scope>
